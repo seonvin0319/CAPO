@@ -1,4 +1,6 @@
-# Canonical CAPO defaults (v8 teacher + hold-teacher + replace gate)
+# TD3+BC control matched to CAPO defaults, but CAPO disabled.
+# Same actor loss (Q-normalized + λ_D BC) and n_critics=4 ensemble.
+# Compare against configs/defaults.yaml (use_capo: true).
 seed: 0
 device: cuda
 max_timesteps: 1000000
@@ -11,7 +13,7 @@ normalize_reward: true
 n_critics: 4
 discount: 0.99
 
-use_capo: true
+use_capo: false
 n_max: 2
 beta_uncertainty: 1.0
 shift_penalty_coef: 0.25
@@ -40,9 +42,9 @@ use_replace_gate: true
 replace_cert_margin: 0.01
 
 eval_base_actor: true
-eval_teacher_actor: true
-paired_eval_episodes: 40
+eval_teacher_actor: false
+paired_eval_episodes: 0
 paired_eval_seed0: 10000
 
 out_dir: results
-run_tag: capo
+run_tag: baseline

@@ -48,6 +48,7 @@ def parse_args():
     p.add_argument("--eval_freq", type=int, default=None)
     p.add_argument("--n_episodes", type=int, default=None)
     p.add_argument("--out_dir", type=str, default=None)
+    p.add_argument("--run_tag", type=str, default=None, help="Folder tag, e.g. capo|baseline")
     p.add_argument("--no_capo", action="store_true")
     p.add_argument("--n_max", type=int, default=None)
     p.add_argument("--capo_period", type=int, default=None)
@@ -101,8 +102,12 @@ def load_config(args) -> TrainConfig:
         cfg.n_episodes = args.n_episodes
     if args.out_dir is not None:
         cfg.out_dir = args.out_dir
+    if args.run_tag is not None:
+        cfg.run_tag = args.run_tag
     if args.no_capo:
         cfg.use_capo = False
+        if not cfg.run_tag:
+            cfg.run_tag = "baseline"
     if args.n_max is not None:
         cfg.n_max = args.n_max
     if args.capo_period is not None:

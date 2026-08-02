@@ -154,6 +154,8 @@ class TrainConfig:
 
     # IO
     out_dir: str = "results"
+    # Optional tag in run folder name, e.g. "capo" / "baseline"
+    run_tag: str = ""
     save_best: bool = True
     log_interval: int = 1000
     use_wandb: bool = False
@@ -418,7 +420,9 @@ class CAPOTrainer:
         self.best_score = -1e9
         self.best_base_score = -1e9
         stamp = time.strftime("%m%d_%H%M")
-        run_name = f"{stamp}_{cfg.algorithm}_{cfg.env}_s{cfg.seed}"
+        tag = (cfg.run_tag or "").strip().replace(" ", "_")
+        mid = f"{tag}_{cfg.algorithm}" if tag else cfg.algorithm
+        run_name = f"{stamp}_{mid}_{cfg.env}_s{cfg.seed}"
         self.run_dir = Path(cfg.out_dir) / cfg.env / f"s{cfg.seed}" / run_name
         self.run_dir.mkdir(parents=True, exist_ok=True)
         with open(self.run_dir / "config.json", "w") as f:

@@ -47,11 +47,13 @@ export MUJOCO_GL=egl   # or osmesa / glfw as appropriate
 |------|-------------|
 | `capo/` | Core library: `core.py` (CAPO certificates), `trainer.py` (D4RL loop), `refiner.py`, `networks.py`, `buffer.py`, `tabular.py` |
 | `configs/defaults.yaml` | Canonical 1M-step defaults (v8 teacher + replace gate) |
+| `configs/baseline_td3bc.yaml` | Matched TD3+BC control (`use_capo: false`, `n_critics: 4`) |
 | `configs/smoke.yaml` | Short hopper smoke run (~2k steps) |
+| `host/` | Shared per-host run board (`choi.csv`, …); see [`host/README.md`](host/README.md) |
 | `scripts/run_capo.py` | Main D4RL training CLI |
 | `scripts/run_tabular.py` | Tabular certificate demo (no MuJoCo) |
 | `scripts/run_smoke.sh` | Tabular + smoke D4RL |
-| `scripts/run_matrix.sh` | Sequential 27-cell matrix (3 algos × 3 envs × 3 datasets, seed 0) |
+| `scripts/run_matrix.sh` | Sequential CAPO vs baseline matrix (2 × 9 cells, seed 0) |
 | `scripts/analyze_*.py`, `summarize_matrix.py` | Post-hoc analysis helpers |
 | `tests/` | Unit tests (`test_pilot_adaptive.py`) |
 
@@ -82,7 +84,7 @@ python scripts/run_capo.py --config configs/defaults.yaml \
 python scripts/run_capo.py --config configs/smoke.yaml --algorithm td3_bc --env hopper-medium-v2
 ```
 
-**27-run locomotion matrix** (sequential, resumable via `queue_status.tsv`):
+**18-run CAPO vs baseline matrix** (td3_bc × 9 envs × {capo, baseline}, sequential, resumable):
 
 ```bash
 bash scripts/run_matrix.sh
@@ -92,7 +94,9 @@ echo $! > results/queue.pid
 tail -f results/queue_status.tsv
 ```
 
-Optional env overrides for the matrix: `SEED`, `DEVICE`, `OUT_DIR`, `CONFIG` (default `configs/defaults.yaml`).
+Optional env overrides: `SEED`, `DEVICE`, `OUT_DIR`, `PYTHON`.
+
+**Multi-host coordination:** claim and publish status under [`host/`](host/README.md) (`host/choi.csv`, …). Local `results/queue_status.tsv` is not shared via git.
 
 ---
 
@@ -101,13 +105,13 @@ Optional env overrides for the matrix: `SEED`, `DEVICE`, `OUT_DIR`, `CONFIG` (de
 Runs write under `out_dir` (default `results/`):
 
 ```text
-results/<env_id>/s<seed>/<MMDD_HHMM>_<algo>_<env_id>_s<seed>/
+results/<env_id>/s<seed>/<MMDD_HHMM>_<run_tag>_<algo>_<env_id>_s<seed>/
 ```
 
 Example:
 
 ```text
-results/hopper-medium-v2/s0/0802_2330_td3_bc_hopper-medium-v2_s0/
+results/hopper-medium-v2/s0/0803_0012_capo_td3_bc_hopper-medium-v2_s0/
 ```
 
 Typical artifacts (not committed to git):
@@ -116,7 +120,7 @@ Typical artifacts (not committed to git):
 - `capo_refresh.jsonl`, `capo_ladder.jsonl` (CAPO diagnostics)
 - `best.pt`, `final.pt`, `checkpoint_<steps>.pt`
 
-Matrix queue tracking:
+Matrix queue tracking (local only):
 
 - `results/queue_status.tsv` — per-cell status and run directory
 - `results/queue_master.log` — matrix stdout/stderr when using `nohup`
