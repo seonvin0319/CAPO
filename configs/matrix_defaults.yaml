@@ -39,7 +39,7 @@ bc_reduction: element_mean
 teacher_hold: true
 hold_teacher_on_nstar_zero: true
 use_replace_gate: true
-replace_cert_margin: 0.01
+replace_cert_margin: 0.0
 
 eval_base_actor: true
 eval_teacher_actor: true

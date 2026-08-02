@@ -1,19 +1,19 @@
 variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finished,eta,notes,updated_at
-capo,td3_bc,hopper,medium,0,running,configs/defaults.yaml,capo,results/hopper-medium-v2/s0/0803_0012_capo_td3_bc_hopper-medium-v2_s0,2026-08-03 00:11:59,,~45min/cell; ~14h for full 18-cell matrix,live matrix on choi GPU0; results/queue.pid,2026-08-03 00:14:00
-capo,td3_bc,hopper,expert,0,queued,configs/defaults.yaml,capo,,,,,after hopper-medium capo,2026-08-03 00:14:00
-capo,td3_bc,hopper,replay,0,queued,configs/defaults.yaml,capo,,,,,after hopper-expert capo,2026-08-03 00:14:00
-capo,td3_bc,halfcheetah,medium,0,queued,configs/defaults.yaml,capo,,,,,after hopper block capo,2026-08-03 00:14:00
-capo,td3_bc,halfcheetah,expert,0,queued,configs/defaults.yaml,capo,,,,,,2026-08-03 00:14:00
-capo,td3_bc,halfcheetah,replay,0,queued,configs/defaults.yaml,capo,,,,,,2026-08-03 00:14:00
-capo,td3_bc,walker2d,medium,0,queued,configs/defaults.yaml,capo,,,,,,2026-08-03 00:14:00
-capo,td3_bc,walker2d,expert,0,queued,configs/defaults.yaml,capo,,,,,,2026-08-03 00:14:00
-capo,td3_bc,walker2d,replay,0,queued,configs/defaults.yaml,capo,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,hopper,medium,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,after all 9 capo cells; use_capo=false n_critics=4,2026-08-03 00:14:00
-baseline,td3_bc,hopper,expert,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,hopper,replay,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,halfcheetah,medium,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,halfcheetah,expert,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,halfcheetah,replay,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,walker2d,medium,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,walker2d,expert,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
-baseline,td3_bc,walker2d,replay,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:14:00
+capo,td3_bc,hopper,medium,0,running,configs/defaults.yaml,capo,results/hopper-medium-v2/s0/0803_0055_capo_td3_bc_hopper-medium-v2_s0,2026-08-03 00:56:00,,~45min/cell; ~14h for 18-cell matrix,restart margin=0.0; old 0803_0012 archived,2026-08-03 00:56:00
+capo,td3_bc,hopper,expert,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,hopper,replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,halfcheetah,medium,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,halfcheetah,expert,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,halfcheetah,replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,walker2d,medium,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,walker2d,expert,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+capo,td3_bc,walker2d,replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 00:55:00
+baseline,td3_bc,hopper,medium,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,after 9 capo cells; use_capo=false,2026-08-03 00:55:00
+baseline,td3_bc,hopper,expert,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,hopper,replay,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,halfcheetah,medium,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,halfcheetah,expert,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,halfcheetah,replay,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,walker2d,medium,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,walker2d,expert,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00
+baseline,td3_bc,walker2d,replay,0,queued,configs/baseline_td3bc.yaml,baseline,,,,,,2026-08-03 00:55:00

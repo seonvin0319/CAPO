@@ -144,7 +144,7 @@ class TrainConfig:
     hold_teacher_on_nstar_zero: bool = True
     # Incumbent–challenger replacement (same-time, same-critic pairwise cert).
     use_replace_gate: bool = True
-    replace_cert_margin: float = 0.01  # require C^{O→N} > margin
+    replace_cert_margin: float = 0.0  # require C^{O→N} > margin (0.0 matches v8 hold)
 
     eval_base_actor: bool = True  # legacy name; evaluates student θL
     eval_teacher_actor: bool = True
