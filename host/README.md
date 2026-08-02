@@ -73,9 +73,13 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
    local matrix is live.
 6. **Local queue ≠ board.** `results/queue_status.tsv` is machine-local. The board
    in `host/` is what other hosts read. Keep them roughly in sync (same statuses).
-7. **Matched CAPO vs baseline.** Current default matrix (seed 0):
-   - `capo` → `configs/defaults.yaml`, `run_tag=capo`, `use_capo=true`, `n_critics=4`
-   - `baseline` → `configs/baseline_td3bc.yaml`, `run_tag=baseline`, `use_capo=false`, `n_critics=4`
+7. **Matched CAPO vs baseline.** Current default matrices (seed 0):
+   - **choi / TD3+BC:** `scripts/run_matrix.sh`
+     - `capo` → `configs/defaults.yaml`, `run_tag=capo`, `use_capo=true`, `n_critics=4`
+     - `baseline` → `configs/baseline_td3bc.yaml`, `run_tag=baseline`, `use_capo=false`, `n_critics=4`
+   - **offrl / IQL:** `scripts/run_matrix_iql.sh` (same schedule/hyperparams, `--algorithm iql`)
+     - `capo` → `configs/defaults.yaml`, `run_tag=capo`, `use_capo=true`, `n_critics=4`
+     - `baseline` → `configs/baseline_iql.yaml`, `run_tag=baseline`, `use_capo=false`, `n_critics=4`
    - 3 envs × 3 datasets × 2 variants = **18 cells** (sequential on one GPU)
 
 ## How to update (example)
