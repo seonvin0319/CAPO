@@ -31,7 +31,7 @@ variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finishe
 | `variant` | `capo` or `baseline` (matched ablation). Other tags OK if noted. |
 | `algo` | `td3_bc` / `iql` / `cql` |
 | `env_base` | `hopper` / `halfcheetah` / `walker2d` |
-| `dataset` | `medium` / `expert` / `replay` (= medium-replay) |
+| `dataset` | `medium` / `medium-expert` / `replay` (= medium-replay); legacy `expert` ok in notes |
 | `seed` | integer; paper seeds `{0,1,2}` |
 | `status` | `planned` / `queued` / `running` / `done` / `failed` / `blocked` / `cancelled` |
 | `config` | path under repo, e.g. `configs/defaults.yaml` |
@@ -87,7 +87,8 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
    - **svcho** owns the matched **cql** matrix (`scripts/run_matrix_cql.sh`,
      `baseline` → `configs/baseline_cql.yaml`).
 8. **Pipeline ownership (seed 0).**
-   - **choi:** CAPO defaults × 9 → baseline td3bc × 9
+   - **choi:** finish current CAPO × 9 → CAPO medium-expert × 3 →
+     baseline td3bc × 9 (`medium` / `medium-expert` / `replay`)
      (`scripts/queue_choi_pipeline.sh`; status `queue_status.tsv` /
      `queue_status_baseline.tsv`)
    - **ext_csh:** v8 hold × 9 — `configs/v8_hold.yaml` /

@@ -15,7 +15,8 @@ DEVICE="${DEVICE:-cuda}"
 OUT_DIR="${OUT_DIR:-results}"
 
 ENVS=(hopper halfcheetah walker2d)
-DATASETS=(medium expert replay)
+# paper cells: medium / medium-expert / medium-replay (alias: replay)
+DATASETS=(medium medium-expert replay)
 # status key | config | run_tag
 VARIANTS=(
   "capo|configs/defaults.yaml|capo"
@@ -78,8 +79,10 @@ for spec in "${VARIANTS[@]}"; do
       fi
       case "$ds" in
         medium) env_id="${envb}-medium-v2" ;;
+        medium-expert|medium_expert) env_id="${envb}-medium-expert-v2" ;;
         expert) env_id="${envb}-expert-v2" ;;
-        replay) env_id="${envb}-medium-replay-v2" ;;
+        replay|medium-replay|medium_replay) env_id="${envb}-medium-replay-v2" ;;
+        *) echo "[fail] unknown dataset=$ds"; exit 2 ;;
       esac
       started="$(date '+%F %T')"
       mark "$variant" "$envb" "$ds" "running" "pending" "$started" ""

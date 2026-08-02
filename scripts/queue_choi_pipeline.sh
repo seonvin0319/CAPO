@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # choi pipeline (sequential, one GPU):
-#   1) wait until defaults CAPO × 9 cells are done (results/queue_status.tsv)
-#   2) stop the live matrix so it does NOT continue unexpectedly
-#   3) run baseline td3bc × 9
+#   1) wait until current CAPO matrix finishes (9 cells in results/queue_status.tsv)
+#      — live cell is walker2d-replay; do not kill it from outside this script
+#   2) stop the live matrix master so it does not continue with stale in-memory plan
+#   3) CAPO medium-expert × 3 (replaces cancelled expert plan)
+#   4) baseline td3bc × 9 (medium / medium-expert / replay)
 # v8_hold is owned by ext_csh (not launched here).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,7 +18,12 @@ PYTHON_BIN="${PYTHON_BIN:-/home/choi/miniconda3/envs/offrl_backup/bin/python}"
 
 capo_done_count() {
   [[ -f "$CAPO_STATUS" ]] || { echo 0; return; }
-  awk -F'\t' '$1=="capo" && $2=="td3_bc" && $5=="done" {c++} END{print c+0}' "$CAPO_STATUS"
+  # Count original medium/expert/replay capo cells (the live matrix).
+  awk -F'\t' '
+    $1=="capo" && $2=="td3_bc" && $5=="done" &&
+    ($4=="medium" || $4=="expert" || $4=="replay") {c++}
+    END{print c+0}
+  ' "$CAPO_STATUS"
 }
 
 stop_live_matrix() {
@@ -56,7 +63,7 @@ wait_pid_file() {
 }
 
 {
-  echo "[$(date '+%F %T')] choi pipeline start: capo9 → baseline9 (v8_hold cancelled → ext_csh)"
+  echo "[$(date '+%F %T')] choi pipeline start: finish capo9 → medium-expert×3 → baseline9 (expert cancelled)"
 
   echo "[$(date '+%F %T')] phase1: wait for 9 capo cells done in $CAPO_STATUS"
   while true; do
@@ -72,7 +79,13 @@ wait_pid_file() {
 
   echo "[$(date '+%F %T')] skip v8_hold (owned by ext_csh)"
 
-  echo "[$(date '+%F %T')] phase2: launch baseline td3bc × 9"
+  echo "[$(date '+%F %T')] phase2: CAPO medium-expert × 3"
+  nohup bash "$ROOT/scripts/run_matrix_capo_medium_expert.sh" \
+    > "$ROOT/results/queue_capo_medium_expert.log" 2>&1 &
+  echo $! > "$ROOT/results/queue_capo_medium_expert.pid"
+  wait_pid_file "$ROOT/results/queue_capo_medium_expert.pid" "capo_medium_expert"
+
+  echo "[$(date '+%F %T')] phase3: launch baseline td3bc × 9 (medium / medium-expert / replay)"
   nohup bash "$ROOT/scripts/run_matrix_baseline_td3bc.sh" > "$ROOT/results/queue_baseline.log" 2>&1 &
   echo $! > "$ROOT/results/queue_baseline.pid"
   wait_pid_file "$ROOT/results/queue_baseline.pid" "baseline"

@@ -41,7 +41,7 @@ def parse_args():
     p.add_argument("--algorithm", type=str, default=None, choices=["td3_bc", "iql", "cql", "td3bc"])
     p.add_argument("--env", type=str, default=None, help="Full D4RL id or alias")
     p.add_argument("--env_base", type=str, default=None, choices=["hopper", "halfcheetah", "walker2d"])
-    p.add_argument("--dataset", type=str, default=None, help="medium | expert | replay")
+    p.add_argument("--dataset", type=str, default=None, help="medium | medium-expert | expert | replay")
     p.add_argument("--seed", type=int, default=None)
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--max_timesteps", type=int, default=None)

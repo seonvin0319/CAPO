@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# TD3+BC matched baseline only (use_capo: false, n_critics=4) × 9 cells.
+# CAPO defaults × 3 medium-expert cells only (seed 0, sequential).
+# Used after the accidental expert matrix; medium/replay already done.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -11,15 +12,14 @@ PYTHON="${PYTHON:-/home/choi/miniconda3/envs/offrl_backup/bin/python}"
 SEED="${SEED:-0}"
 DEVICE="${DEVICE:-cuda}"
 OUT_DIR="${OUT_DIR:-results}"
-CONFIG="${CONFIG:-configs/baseline_td3bc.yaml}"
-VARIANT="baseline"
-RUN_TAG="baseline"
+CONFIG="${CONFIG:-configs/defaults.yaml}"
+VARIANT="capo"
+RUN_TAG="capo"
+DATASETS=(medium-expert)
 
 ENVS=(hopper halfcheetah walker2d)
-# paper cells: medium / medium-expert / medium-replay (alias: replay)
-DATASETS=(medium medium-expert replay)
 
-STATUS_FILE="$OUT_DIR/queue_status_baseline.tsv"
+STATUS_FILE="$OUT_DIR/queue_status.tsv"
 mkdir -p "$OUT_DIR"
 if [[ ! -f "$STATUS_FILE" ]]; then
   echo -e "variant\talgo\tenv_base\tdataset\tstatus\trun_dir\tstarted\tfinished" > "$STATUS_FILE"
@@ -63,7 +63,7 @@ latest_run_dir() {
   echo "$hit"
 }
 
-echo "[CAPO baseline] 9 jobs → $OUT_DIR (config=$CONFIG seed=$SEED device=$DEVICE)"
+echo "[CAPO medium-expert] 3 jobs → $OUT_DIR (config=$CONFIG seed=$SEED device=$DEVICE)"
 
 for envb in "${ENVS[@]}"; do
   for ds in "${DATASETS[@]}"; do
@@ -71,13 +71,7 @@ for envb in "${ENVS[@]}"; do
       echo "[skip] $VARIANT td3_bc $envb $ds (already done)"
       continue
     fi
-    case "$ds" in
-      medium) env_id="${envb}-medium-v2" ;;
-      medium-expert|medium_expert) env_id="${envb}-medium-expert-v2" ;;
-      expert) env_id="${envb}-expert-v2" ;;
-      replay|medium-replay|medium_replay) env_id="${envb}-medium-replay-v2" ;;
-      *) echo "[fail] unknown dataset=$ds"; exit 2 ;;
-    esac
+    env_id="${envb}-medium-expert-v2"
     started="$(date '+%F %T')"
     mark "$envb" "$ds" "running" "pending" "$started" ""
     echo "[run] $VARIANT td3_bc $envb $ds → $env_id"
@@ -105,5 +99,5 @@ for envb in "${ENVS[@]}"; do
   done
 done
 
-echo "[CAPO baseline] finished. status=$STATUS_FILE"
+echo "[CAPO medium-expert] finished. status=$STATUS_FILE"
 "$PYTHON" scripts/summarize_matrix.py --out_dir "$OUT_DIR" || true
