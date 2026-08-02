@@ -9,6 +9,7 @@ hosts see an up-to-date board.
 | File | Owner | Purpose |
 |------|--------|---------|
 | `choi.csv` | host `choi` | Live + planned cells on choi |
+| `offrl.csv` | host `offrl` | Live + planned cells on offrl |
 | `<alias>.csv` | that host | Same schema; one file per machine |
 | `README.md` | anyone (via PR/commit) | These rules |
 
@@ -65,10 +66,11 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
    change ETA by >30 minutes, or reassign ownership.
 4. **Git share path.** Prefer committing only `host/*.csv` (+ this README). Do **not**
    commit `results/` checkpoints. Pull `--rebase` before push.
-5. **Refresh + push on every queue change (choi).** When launching a queue, finishing /
-   failing a cell, changing ETA by >30 minutes, or reassigning work: update
-   `host/choi.csv` immediately, then `git pull --rebase` → commit → `git push`.
-   Other hosts should mirror this for their own `<alias>.csv`.
+5. **Refresh + push on every queue change.** When launching a queue, finishing /
+   failing a cell, changing ETA by >30 minutes, or reassigning work: update **your**
+   `host/<alias>.csv` immediately (`choi` → `choi.csv`, `offrl` → `offrl.csv`), then
+   `git pull --rebase` → commit → `git push`. Do not leave the board stale while a
+   local matrix is live.
 6. **Local queue ≠ board.** `results/queue_status.tsv` is machine-local. The board
    in `host/` is what other hosts read. Keep them roughly in sync (same statuses).
 7. **Matched CAPO vs baseline.** Current default matrix (seed 0):
