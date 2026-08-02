@@ -54,9 +54,10 @@ export MUJOCO_GL=egl   # or osmesa / glfw as appropriate
 | `scripts/run_tabular.py` | Tabular certificate demo (no MuJoCo) |
 | `scripts/run_smoke.sh` | Tabular + smoke D4RL |
 | `configs/v8_hold.yaml` | Successful diag_v8 hold hyperparams (`λ_D=0.2`, `λ_T=1.0`, period 50k) |
-| `scripts/run_matrix.sh` | Sequential CAPO vs baseline matrix (2 × 9 cells, seed 0) |
-| `scripts/run_matrix_v8_hold.sh` | 9-cell v8-hold matrix (`run_tag=v8_hold`) |
-| `scripts/queue_v8_hold_after_current.sh` | Wait for live matrix, then start v8_hold |
+| `scripts/run_matrix.sh` | CAPO defaults × 9 cells (`run_tag=capo`) |
+| `scripts/run_matrix_v8_hold.sh` | v8-hold success config × 9 (`run_tag=v8_hold`) |
+| `scripts/run_matrix_baseline_td3bc.sh` | TD3+BC baseline × 9 (`use_capo=false`) |
+| `scripts/queue_choi_pipeline.sh` | Orchestrate capo9 → v8_hold9 → baseline9 |
 | `scripts/analyze_*.py`, `summarize_matrix.py` | Post-hoc analysis helpers |
 | `tests/` | Unit tests (`test_pilot_adaptive.py`) |
 
@@ -87,19 +88,22 @@ python scripts/run_capo.py --config configs/defaults.yaml \
 python scripts/run_capo.py --config configs/smoke.yaml --algorithm td3_bc --env hopper-medium-v2
 ```
 
-**18-run CAPO vs baseline matrix** (td3_bc × 9 envs × {capo, baseline}, sequential, resumable):
+**choi pipeline** (capo×9 → v8_hold×9 → baseline×9, sequential):
 
 ```bash
-bash scripts/run_matrix.sh
-# or background:
+# CAPO defaults only (9 cells)
 nohup bash scripts/run_matrix.sh > results/queue_master.log 2>&1 &
 echo $! > results/queue.pid
-tail -f results/queue_status.tsv
+
+# After capo×9: auto-run v8_hold then baseline
+nohup bash scripts/queue_choi_pipeline.sh >/dev/null 2>&1 &
+echo $! > results/queue_choi_pipeline.pid
+tail -f results/queue_status.tsv results/queue_choi_pipeline.log
 ```
 
 Optional env overrides: `SEED`, `DEVICE`, `OUT_DIR`, `PYTHON`.
 
-**Multi-host coordination:** claim and publish status under [`host/`](host/README.md) (`host/choi.csv`, …). Local `results/queue_status.tsv` is not shared via git.
+**Multi-host coordination:** claim and publish status under [`host/`](host/README.md) (`host/choi.csv`, …). Local `results/queue_status*.tsv` is not shared via git.
 
 ---
 

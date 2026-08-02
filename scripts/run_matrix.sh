@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# CAPO vs TD3+BC(4-critic) baseline on locomotion.
-# 2 variants × 3 envs × 3 datasets = 18 runs (seed 0, sequential).
-#   capo      → configs/defaults.yaml      (use_capo: true)
-#   baseline  → configs/baseline_td3bc.yaml (use_capo: false)
+# CAPO defaults × 9 locomotion cells (seed 0, sequential).
+#   capo → configs/defaults.yaml (use_capo: true, n_critics=4)
+# Baseline and v8_hold are separate launchers / pipeline stages.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -20,7 +19,6 @@ DATASETS=(medium expert replay)
 # status key | config | run_tag
 VARIANTS=(
   "capo|configs/defaults.yaml|capo"
-  "baseline|configs/baseline_td3bc.yaml|baseline"
 )
 
 STATUS_FILE="$OUT_DIR/queue_status.tsv"
@@ -55,7 +53,7 @@ latest_run_dir() {
   ls -dt "$base"/[0-9][0-9][0-9][0-9]_*_"${tag}"_td3_bc_"${env_id}"_s"${seed}" 2>/dev/null | head -1
 }
 
-echo "[CAPO matrix] 18 jobs (capo + baseline td3_bc × 9 envs) → $OUT_DIR (seed=$SEED device=$DEVICE)"
+echo "[CAPO matrix] 9 jobs (capo td3_bc × 9 envs) → $OUT_DIR (seed=$SEED device=$DEVICE)"
 
 for spec in "${VARIANTS[@]}"; do
   IFS='|' read -r variant config run_tag <<<"$spec"

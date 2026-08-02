@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# TD3+BC matched baseline only (use_capo: false, n_critics=4) × 9 cells.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+export D4RL_SUPPRESS_IMPORT_ERROR=1
+export MUJOCO_GL="${MUJOCO_GL:-egl}"
+
+PYTHON="${PYTHON:-/home/choi/miniconda3/envs/offrl_backup/bin/python}"
+SEED="${SEED:-0}"
+DEVICE="${DEVICE:-cuda}"
+OUT_DIR="${OUT_DIR:-results}"
+CONFIG="${CONFIG:-configs/baseline_td3bc.yaml}"
+VARIANT="baseline"
+RUN_TAG="baseline"
+
+ENVS=(hopper halfcheetah walker2d)
+DATASETS=(medium expert replay)
+
+STATUS_FILE="$OUT_DIR/queue_status_baseline.tsv"
+mkdir -p "$OUT_DIR"
+if [[ ! -f "$STATUS_FILE" ]]; then
+  echo -e "variant\talgo\tenv_base\tdataset\tstatus\trun_dir\tstarted\tfinished" > "$STATUS_FILE"
+fi
+
+is_done() {
+  local envb="$1" ds="$2"
+  grep -q '^'"${VARIANT}"$'\ttd3_bc\t'"${envb}"$'\t'"${ds}"$'\t'done$'\t' "$STATUS_FILE" 2>/dev/null
+}
+
+mark() {
+  local envb="$1" ds="$2" status="$3" run_dir="$4" started="$5" finished="${6:-}"
+  local tmp
+  tmp="$(mktemp)"
+  awk -F'\t' -v v="$VARIANT" -v e="$envb" -v d="$ds" '
+    NR==1 {print; next}
+    !($1==v && $2=="td3_bc" && $3==e && $4==d) {print}
+  ' "$STATUS_FILE" > "$tmp"
+  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+    "$VARIANT" "td3_bc" "$envb" "$ds" "$status" "$run_dir" "$started" "$finished" >> "$tmp"
+  mv "$tmp" "$STATUS_FILE"
+}
+
+latest_run_dir() {
+  local env_id="$1" seed="$2"
+  local base="$OUT_DIR/$env_id/s${seed}"
+  [[ -d "$base" ]] || return 1
+  ls -dt "$base"/[0-9][0-9][0-9][0-9]_*_"${RUN_TAG}"_td3_bc_"${env_id}"_s"${seed}" 2>/dev/null | head -1
+}
+
+echo "[CAPO baseline] 9 jobs → $OUT_DIR (config=$CONFIG seed=$SEED device=$DEVICE)"
+
+for envb in "${ENVS[@]}"; do
+  for ds in "${DATASETS[@]}"; do
+    if is_done "$envb" "$ds"; then
+      echo "[skip] $VARIANT td3_bc $envb $ds (already done)"
+      continue
+    fi
+    case "$ds" in
+      medium) env_id="${envb}-medium-v2" ;;
+      expert) env_id="${envb}-expert-v2" ;;
+      replay) env_id="${envb}-medium-replay-v2" ;;
+    esac
+    started="$(date '+%F %T')"
+    mark "$envb" "$ds" "running" "pending" "$started" ""
+    echo "[run] $VARIANT td3_bc $envb $ds → $env_id"
+    set +e
+    "$PYTHON" scripts/run_capo.py \
+      --config "$CONFIG" \
+      --algorithm td3_bc \
+      --env_base "$envb" \
+      --dataset "$ds" \
+      --seed "$SEED" \
+      --device "$DEVICE" \
+      --out_dir "$OUT_DIR" \
+      --run_tag "$RUN_TAG"
+    rc=$?
+    set -e
+    finished="$(date '+%F %T')"
+    run_dir="$(latest_run_dir "$env_id" "$SEED" || echo unknown)"
+    if [[ $rc -eq 0 ]]; then
+      mark "$envb" "$ds" "done" "$run_dir" "$started" "$finished"
+      echo "[ok] $VARIANT $envb $ds → $run_dir"
+    else
+      mark "$envb" "$ds" "failed" "$run_dir" "$started" "$finished"
+      echo "[fail] $VARIANT $envb $ds rc=$rc"
+    fi
+  done
+done
+
+echo "[CAPO baseline] finished. status=$STATUS_FILE"
+"$PYTHON" scripts/summarize_matrix.py --out_dir "$OUT_DIR" || true

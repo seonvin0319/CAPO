@@ -84,13 +84,17 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
    - **choi** owns the **td3_bc** matrix (`scripts/run_matrix.sh`).
    - **svcho** owns the matched **cql** matrix (`scripts/run_matrix_cql.sh`,
      `baseline` → `configs/baseline_cql.yaml`).
-8. **v8 hold success config (choi, 9 cells).** After the current 18-cell td3_bc
-   matrix finishes, choi runs `configs/v8_hold.yaml` (`run_tag=v8_hold`):
-   `λ_D=0.2`, `λ_T=1.0`, `capo_period=50000`, `replace_cert_margin=0.0`,
-   `beta_uncertainty=0.75`, `data_penalty_coef=0.25`, `max_action_mse=0.2`.
-   - Launcher: `scripts/run_matrix_v8_hold.sh`
-   - Status: `results/queue_status_v8_hold.tsv`
-   - Auto-chain: `scripts/queue_v8_hold_after_current.sh` (waits on `results/queue.pid`)
+8. **choi pipeline order (27 cells total).** One GPU, sequential:
+   1. CAPO defaults × 9 — `scripts/run_matrix.sh` (`configs/defaults.yaml`)
+   2. v8 hold × 9 — `scripts/run_matrix_v8_hold.sh` (`configs/v8_hold.yaml`:
+      `λ_D=0.2`, `λ_T=1.0`, `capo_period=50000`, `margin=0.0`, …)
+   3. TD3+BC baseline × 9 — `scripts/run_matrix_baseline_td3bc.sh`
+      (`configs/baseline_td3bc.yaml`, `use_capo=false`)
+   - Orchestrator: `scripts/queue_choi_pipeline.sh`
+     (waits for 9 capo `done`, stops the live matrix before baseline, then
+     runs v8_hold → baseline)
+   - Status files: `queue_status.tsv`, `queue_status_v8_hold.tsv`,
+     `queue_status_baseline.tsv`
 
 ## How to update (example)
 
