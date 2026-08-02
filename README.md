@@ -53,7 +53,10 @@ export MUJOCO_GL=egl   # or osmesa / glfw as appropriate
 | `scripts/run_capo.py` | Main D4RL training CLI |
 | `scripts/run_tabular.py` | Tabular certificate demo (no MuJoCo) |
 | `scripts/run_smoke.sh` | Tabular + smoke D4RL |
+| `configs/v8_hold.yaml` | Successful diag_v8 hold hyperparams (`λ_D=0.2`, `λ_T=1.0`, period 50k) |
 | `scripts/run_matrix.sh` | Sequential CAPO vs baseline matrix (2 × 9 cells, seed 0) |
+| `scripts/run_matrix_v8_hold.sh` | 9-cell v8-hold matrix (`run_tag=v8_hold`) |
+| `scripts/queue_v8_hold_after_current.sh` | Wait for live matrix, then start v8_hold |
 | `scripts/analyze_*.py`, `summarize_matrix.py` | Post-hoc analysis helpers |
 | `tests/` | Unit tests (`test_pilot_adaptive.py`) |
 
