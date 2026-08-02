@@ -112,14 +112,17 @@ Optional env overrides: `SEED`, `DEVICE`, `OUT_DIR`, `PYTHON`.
 Runs write under `out_dir` (default `results/`):
 
 ```text
-results/<env_id>/s<seed>/<MMDD_HHMM>_<run_tag>_<algo>_<env_id>_s<seed>/
+results/<algo>/<env_id>/s<seed>/<MMDD_HHMM>_<run_tag>_<algo>_<env_id>_s<seed>/
 ```
 
 Example:
 
 ```text
-results/hopper-medium-v2/s0/0803_0012_capo_td3_bc_hopper-medium-v2_s0/
+results/iql/hopper-medium-v2/s0/0803_0100_capo_iql_hopper-medium-v2_s0/
 ```
+
+A legacy symlink is also created at `results/<env_id>/s<seed>/<run>/` so older
+matrix `latest_run_dir` helpers keep working while a queue is already live.
 
 Typical artifacts (not committed to git):
 

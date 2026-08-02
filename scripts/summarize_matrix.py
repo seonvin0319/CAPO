@@ -14,7 +14,16 @@ def main():
     args = p.parse_args()
     root = Path(args.out_dir)
     rows = []
+    seen = set()
     for summary in sorted(root.glob("**/summary.json")):
+        # Skip archive/smoke helpers and dedupe legacy symlink duplicates.
+        parts = set(summary.parts)
+        if parts & {"_archived_margin0.01", "_smoke_iql", "_smoke"}:
+            continue
+        key = summary.resolve()
+        if key in seen:
+            continue
+        seen.add(key)
         with open(summary) as f:
             s = json.load(f)
         rows.append(

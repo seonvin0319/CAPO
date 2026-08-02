@@ -48,9 +48,22 @@ mark() {
 
 latest_run_dir() {
   local env_id="$1" seed="$2" tag="$3"
-  local base="$OUT_DIR/$env_id/s${seed}"
-  [[ -d "$base" ]] || return 1
-  ls -dt "$base"/[0-9][0-9][0-9][0-9]_*_"${tag}"_td3_bc_"${env_id}"_s"${seed}" 2>/dev/null | head -1
+  local algo="td3_bc"
+  local pat="[0-9][0-9][0-9][0-9]_*_${tag}_${algo}_${env_id}_s${seed}"
+  local base_new="$OUT_DIR/$algo/$env_id/s${seed}"
+  local base_old="$OUT_DIR/$env_id/s${seed}"
+  local hit=""
+  if [[ -d "$base_new" ]]; then
+    hit="$(ls -dt "$base_new"/$pat 2>/dev/null | head -1 || true)"
+  fi
+  if [[ -z "$hit" && -d "$base_old" ]]; then
+    hit="$(ls -dt "$base_old"/$pat 2>/dev/null | head -1 || true)"
+  fi
+  [[ -n "$hit" ]] || return 1
+  if [[ -L "$hit" ]]; then
+    hit="$(readlink -f "$hit")"
+  fi
+  echo "$hit"
 }
 
 echo "[CAPO matrix] 9 jobs (capo td3_bc × 9 envs) → $OUT_DIR (seed=$SEED device=$DEVICE)"

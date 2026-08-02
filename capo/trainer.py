@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import os
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -423,8 +424,22 @@ class CAPOTrainer:
         tag = (cfg.run_tag or "").strip().replace(" ", "_")
         mid = f"{tag}_{cfg.algorithm}" if tag else cfg.algorithm
         run_name = f"{stamp}_{mid}_{cfg.env}_s{cfg.seed}"
-        self.run_dir = Path(cfg.out_dir) / cfg.env / f"s{cfg.seed}" / run_name
+        # Canonical: results/<algo>/<env_id>/s<seed>/<run>/
+        self.run_dir = (
+            Path(cfg.out_dir) / cfg.algorithm / cfg.env / f"s{cfg.seed}" / run_name
+        )
         self.run_dir.mkdir(parents=True, exist_ok=True)
+        # Legacy symlink results/<env_id>/s<seed>/<run> → canonical.
+        # Keeps in-flight matrix scripts (old latest_run_dir) from missing the path.
+        legacy_parent = Path(cfg.out_dir) / cfg.env / f"s{cfg.seed}"
+        legacy_link = legacy_parent / run_name
+        if not legacy_link.exists() and not legacy_link.is_symlink():
+            legacy_parent.mkdir(parents=True, exist_ok=True)
+            rel = os.path.relpath(self.run_dir, legacy_parent)
+            try:
+                legacy_link.symlink_to(rel)
+            except OSError:
+                pass
         with open(self.run_dir / "config.json", "w") as f:
             json.dump(asdict(cfg), f, indent=2)
         self._log_fp = open(self.run_dir / "train.log", "w", buffering=1)

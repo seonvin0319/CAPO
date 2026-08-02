@@ -51,9 +51,23 @@ mark() {
 
 latest_run_dir() {
   local env_id="$1" seed="$2" tag="$3"
-  local base="$OUT_DIR/$env_id/s${seed}"
-  [[ -d "$base" ]] || return 1
-  ls -dt "$base"/[0-9][0-9][0-9][0-9]_*_"${tag}"_"${ALGO}"_"${env_id}"_s"${seed}" 2>/dev/null | head -1
+  local pat="[0-9][0-9][0-9][0-9]_*_${tag}_${ALGO}_${env_id}_s${seed}"
+  # Prefer results/<algo>/<env>/s<seed>/; fall back to legacy results/<env>/s<seed>/
+  local base_new="$OUT_DIR/$ALGO/$env_id/s${seed}"
+  local base_old="$OUT_DIR/$env_id/s${seed}"
+  local hit=""
+  if [[ -d "$base_new" ]]; then
+    hit="$(ls -dt "$base_new"/$pat 2>/dev/null | head -1 || true)"
+  fi
+  if [[ -z "$hit" && -d "$base_old" ]]; then
+    hit="$(ls -dt "$base_old"/$pat 2>/dev/null | head -1 || true)"
+  fi
+  [[ -n "$hit" ]] || return 1
+  # Resolve symlink → canonical path when present
+  if [[ -L "$hit" ]]; then
+    hit="$(readlink -f "$hit")"
+  fi
+  echo "$hit"
 }
 
 echo "[CAPO IQL matrix] 18 jobs (capo + baseline iql × 9 envs) → $OUT_DIR (seed=$SEED device=$DEVICE)"
