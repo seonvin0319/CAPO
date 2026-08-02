@@ -31,7 +31,7 @@ variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finishe
 | `variant` | `capo` or `baseline` (matched ablation). Other tags OK if noted. |
 | `algo` | `td3_bc` / `iql` / `cql` |
 | `env_base` | `hopper` / `halfcheetah` / `walker2d` |
-| `dataset` | `medium` / `medium-expert` / `replay` (= medium-replay); legacy `expert` ok in notes |
+| `dataset` | `medium` / `medium-expert` / `medium-replay` (D4RL ids). Do **not** write short `replay`; legacy `expert` only for historical artifact rows |
 | `seed` | integer; paper seeds `{0,1,2}` |
 | `status` | `planned` / `queued` / `running` / `done` / `failed` / `blocked` / `cancelled` |
 | `config` | path under repo, e.g. `configs/defaults.yaml` |

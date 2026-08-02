@@ -1,19 +1,19 @@
 variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finished,eta,notes,updated_at
 capo,cql,hopper,medium,0,running,configs/defaults.yaml,capo,results/hopper-medium-v2/s0/0803_0103_capo_cql_hopper-medium-v2_s0,2026-08-03 01:03:00,,~1.6h/cell; ~29h for 18-cell CQL matrix,restart margin=0.0; old 0803_0021 archived,2026-08-03 01:04:00
 capo,cql,hopper,expert,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
-capo,cql,hopper,replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
+capo,cql,hopper,medium-replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 08:52:48
 capo,cql,halfcheetah,medium,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
 capo,cql,halfcheetah,expert,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
-capo,cql,halfcheetah,replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
+capo,cql,halfcheetah,medium-replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 08:52:48
 capo,cql,walker2d,medium,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
 capo,cql,walker2d,expert,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
-capo,cql,walker2d,replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
+capo,cql,walker2d,medium-replay,0,queued,configs/defaults.yaml,capo,,,,,replace_cert_margin=0.0,2026-08-03 08:52:48
 baseline,cql,hopper,medium,0,queued,configs/baseline_cql.yaml,baseline,,,,,after 9 capo; margin=0.0 use_capo=false,2026-08-03 01:04:00
 baseline,cql,hopper,expert,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
-baseline,cql,hopper,replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
+baseline,cql,hopper,medium-replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:48
 baseline,cql,halfcheetah,medium,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
 baseline,cql,halfcheetah,expert,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
-baseline,cql,halfcheetah,replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
+baseline,cql,halfcheetah,medium-replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:48
 baseline,cql,walker2d,medium,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
 baseline,cql,walker2d,expert,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
-baseline,cql,walker2d,replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 01:04:00
+baseline,cql,walker2d,medium-replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:48
