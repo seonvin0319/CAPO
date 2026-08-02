@@ -86,17 +86,14 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
    - **choi** owns the **td3_bc** matrix (`scripts/run_matrix.sh`).
    - **svcho** owns the matched **cql** matrix (`scripts/run_matrix_cql.sh`,
      `baseline` → `configs/baseline_cql.yaml`).
-8. **choi pipeline order (27 cells total).** One GPU, sequential:
-   1. CAPO defaults × 9 — `scripts/run_matrix.sh` (`configs/defaults.yaml`)
-   2. v8 hold × 9 — `scripts/run_matrix_v8_hold.sh` (`configs/v8_hold.yaml`:
-      `λ_D=0.2`, `λ_T=1.0`, `capo_period=50000`, `margin=0.0`, …)
-   3. TD3+BC baseline × 9 — `scripts/run_matrix_baseline_td3bc.sh`
-      (`configs/baseline_td3bc.yaml`, `use_capo=false`)
-   - Orchestrator: `scripts/queue_choi_pipeline.sh`
-     (waits for 9 capo `done`, stops the live matrix before baseline, then
-     runs v8_hold → baseline)
-   - Status files: `queue_status.tsv`, `queue_status_v8_hold.tsv`,
-     `queue_status_baseline.tsv`
+8. **Pipeline ownership (seed 0).**
+   - **choi:** CAPO defaults × 9 → baseline td3bc × 9
+     (`scripts/queue_choi_pipeline.sh`; status `queue_status.tsv` /
+     `queue_status_baseline.tsv`)
+   - **ext_csh:** v8 hold × 9 — `configs/v8_hold.yaml` /
+     `scripts/run_matrix_v8_hold.sh` (`λ_D=0.2`, `λ_T=1.0`,
+     `capo_period=50000`, `margin=0.0`, …). Board: `host/ext_csh.csv`.
+   - choi must not launch v8_hold while ext_csh owns it.
 
 ## How to update (example)
 

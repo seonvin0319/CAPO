@@ -1,0 +1,10 @@
+variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finished,eta,notes,updated_at
+v8_hold,td3_bc,hopper,medium,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi; λ_D=0.2 λ_T=1.0 period=50k margin=0.0,2026-08-03 08:18:00
+v8_hold,td3_bc,hopper,expert,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,hopper,replay,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,halfcheetah,medium,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,halfcheetah,expert,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,halfcheetah,replay,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,walker2d,medium,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,walker2d,expert,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
+v8_hold,td3_bc,walker2d,replay,0,planned,configs/v8_hold.yaml,v8_hold,,,,,claimed from choi,2026-08-03 08:18:00
