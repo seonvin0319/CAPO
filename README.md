@@ -1,16 +1,16 @@
-# CaPO
+# CAPO
 
-**Calibrated Adaptive Proximal Optimization** for offline reinforcement learning.
+**Calibrated Adaptive Policy Optimization** for offline reinforcement learning.
 
-*Subtitle (implementation name):* **Calibrated Adaptive Multi-step Proximal Improvement (CAMPI)** — teacher-guided offline RL on [D4RL](https://github.com/Farama-Foundation/D4RL) with TD3+BC, IQL, and CQL base learners.
+Teacher-guided offline RL on [D4RL](https://github.com/Farama-Foundation/D4RL) with TD3+BC, IQL, and CQL base learners.
 
-Repository: [https://github.com/seonvin0319/CaPO](https://github.com/seonvin0319/CaPO)
+Repository: [https://github.com/seonvin0319/CAPO](https://github.com/seonvin0319/CAPO)
 
 ---
 
 ## What it does
 
-CaPO trains a **student actor** θL with standard offline RL critics while periodically running **CAMPI** on a held-out batch: a certificate-driven procedure picks a proximal step size τ (via **pilot-adaptive** search), runs capped multi-step refinement, and optionally installs a **teacher** θR. The student actor is updated with a TD3-style Q term plus dataset BC and **teacher BC** when a teacher is active. Critics always bootstrap from θL only, so teacher refinement does not create a critic feedback loop.
+CAPO trains a **student actor** θL with standard offline RL critics while periodically running **CAPO** on a held-out batch: a certificate-driven procedure picks a proximal step size τ (via **pilot-adaptive** search), runs capped multi-step refinement, and optionally installs a **teacher** θR. The student actor is updated with a TD3-style Q term plus dataset BC and **teacher BC** when a teacher is active. Critics always bootstrap from θL only, so teacher refinement does not create a critic feedback loop.
 
 Typical use: locomotion benchmarks (`hopper`, `halfcheetah`, `walker2d` × `medium` / `expert` / `replay`) and smoke tests on a single GPU.
 
@@ -18,7 +18,7 @@ Typical use: locomotion benchmarks (`hopper`, `halfcheetah`, `walker2d` × `medi
 
 ## Requirements
 
-**Recommended:** Conda environment `offrl_backup` (PyTorch + CUDA, MuJoCo, D4RL already installed on the authors’ machines).
+**Recommended:** Conda environment `offrl_backup` (PyTorch + CUDA, MuJoCo, D4RL already installed on the authors' machines).
 
 Otherwise install Python dependencies and D4RL manually:
 
@@ -45,7 +45,7 @@ export MUJOCO_GL=egl   # or osmesa / glfw as appropriate
 
 | Path | Description |
 |------|-------------|
-| `capo/` | Core library: `core.py` (CAMPI certificates), `trainer.py` (D4RL loop), `refiner.py`, `networks.py`, `buffer.py`, `tabular.py` |
+| `capo/` | Core library: `core.py` (CAPO certificates), `trainer.py` (D4RL loop), `refiner.py`, `networks.py`, `buffer.py`, `tabular.py` |
 | `configs/defaults.yaml` | Canonical 1M-step defaults (v8 teacher + replace gate) |
 | `configs/smoke.yaml` | Short hopper smoke run (~2k steps) |
 | `scripts/run_capo.py` | Main D4RL training CLI |
@@ -64,10 +64,10 @@ export MUJOCO_GL=egl   # or osmesa / glfw as appropriate
 From the repository root:
 
 ```bash
-cd CaPO
+cd /path/to/CAPO
 conda activate offrl_backup   # or your env with torch + d4rl
 
-# 1) Tabular CAMPI demo (fast, no D4RL env rollouts)
+# 1) Tabular CAPO demo (fast, no D4RL env rollouts)
 python scripts/run_tabular.py
 python scripts/run_tabular.py --seed 0
 
@@ -113,7 +113,7 @@ results/hopper-medium-v2/s0/0802_2330_td3_bc_hopper-medium-v2_s0/
 Typical artifacts (not committed to git):
 
 - `train.log`, `config.json`, `metrics.jsonl`, `summary.json`
-- `capo_refresh.jsonl`, `capo_ladder.jsonl` (CAMPI diagnostics)
+- `capo_refresh.jsonl`, `capo_ladder.jsonl` (CAPO diagnostics)
 - `best.pt`, `final.pt`, `checkpoint_<steps>.pt`
 
 Matrix queue tracking:
@@ -128,7 +128,7 @@ Matrix queue tracking:
 | Group | Keys | Role |
 |-------|------|------|
 | Training | `max_timesteps`, `batch_size`, `eval_freq`, `n_episodes`, `discount`, `n_critics` | Standard offline RL schedule |
-| CAMPI schedule | `use_campi`, `campi_start_step`, `campi_period`, `n_max`, `refine_steps` | When and how often CAMPI runs |
+| CAPO schedule | `use_capo`, `capo_start_step`, `capo_period`, `n_max`, `refine_steps` | When and how often CAPO runs |
 | Certificate | `beta_uncertainty`, `shift_penalty_coef`, `data_penalty_coef`, `normalize_delta_q`, `split_critics_for_certification` | Offline improvement certificate |
 | τ search | `tau_controller: pilot_adaptive`, `tau_candidates`, `tau_min`/`tau_max`, `target_action_mse`, `tau_pilot_initial`, `max_action_mse` | Pilot-adaptive proximal step size |
 | Teacher / actor | `lambda_D`, `lambda_T`, `teacher_hold`, `hold_teacher_on_nstar_zero`, `use_replace_gate`, `replace_cert_margin` | Student loss and teacher lifecycle |
@@ -142,7 +142,7 @@ CLI flags on `run_capo.py` override many of these without editing YAML.
 
 1. **Base learner (θL):** TD3+BC, IQL, or CQL updates θL and critics; **all critic targets use θL** (and θL-target), never θR.
 
-2. **CAMPI refresh:** Every `campi_period` steps after `campi_start_step`, build a challenger teacher from θL using multi-step proximal refinement. **τ** is chosen by **`pilot_adaptive`** control (target action MSE vs certificate gain), not a full grid over all candidates each step.
+2. **CAPO refresh:** Every `capo_period` steps after `capo_start_step`, build a challenger teacher from θL using multi-step proximal refinement. **τ** is chosen by **`pilot_adaptive`** control (target action MSE vs certificate gain), not a full grid over all candidates each step.
 
 3. **Certificate:** Scale-normalized ΔQ minus uncertainty, shift, and data-distance penalties yields an offline improvement certificate; the procedure selects τ and effective step count **N\***.
 
@@ -163,7 +163,7 @@ See `capo/core.py` and `capo/trainer.py` module docstrings for design constraint
 ## Testing
 
 ```bash
-cd CaPO
+cd /path/to/CAPO
 pytest tests/test_pilot_adaptive.py -q
 # or
 python -m pytest tests/test_pilot_adaptive.py
@@ -179,4 +179,4 @@ See repository defaults on GitHub; add a `LICENSE` file if you open-source forma
 
 ## Citation
 
-If you use this code, please cite the associated paper (TBD) and link to [https://github.com/seonvin0319/CaPO](https://github.com/seonvin0319/CaPO).
+If you use this code, please cite the associated paper (TBD) and link to [https://github.com/seonvin0319/CAPO](https://github.com/seonvin0319/CAPO).

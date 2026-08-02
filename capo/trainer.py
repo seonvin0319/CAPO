@@ -1,7 +1,7 @@
-"""CaPO trainer — teacher-guided proximal refinement for offline RL.
+"""CAPO trainer — teacher-guided proximal refinement for offline RL.
 
 θL = learning actor (critic targets always use θL / θL-target)
-θR = CAMPI refinement actor / soft teacher
+θR = CAPO refinement actor / soft teacher
 When Cert accepts (N*>0), θR becomes a BC teacher for θL:
     L_actor = -mean(Q/q_scale) + λ_D BC_data(θL, a_D)
               + teacher_active * λ_T BC_teacher(θL, θR)
@@ -33,7 +33,7 @@ from .buffer import (
     make_env,
 )
 from .core import (
-    CAMPIConfig,
+    CAPOConfig,
     calibrated_adaptive_mpi,
     candidate_certificate,
     dataset_action_mse,
@@ -111,8 +111,8 @@ class TrainConfig:
     bc_steps: int = 0
     bc_coef: float = 1.0
 
-    # CAMPI (CaPO teacher path)
-    use_campi: bool = True
+    # CAPO (CAPO teacher path)
+    use_capo: bool = True
 
     n_max: int = 2
     beta_uncertainty: float = 1.0
@@ -127,7 +127,7 @@ class TrainConfig:
     split_critics_for_certification: bool = True
     refine_steps: int = 2
     refine_lr: float = 3e-4
-    campi_eval_batch: int = 512
+    capo_eval_batch: int = 512
     q_scale_ema: float = 0.99
     # Tau controller: pilot_adaptive (default) | full_grid | movement_warm_start
     tau_controller: str = "pilot_adaptive"
@@ -137,8 +137,8 @@ class TrainConfig:
     tau_duplicate_log_tolerance: float = 1e-6
 
     # Teacher-guided training schedule
-    campi_period: int = 100_000  # refresh θR from θL every this many env steps
-    campi_start_step: int = 100_000  # warm up critic before enabling CAMPI
+    capo_period: int = 100_000  # refresh θR from θL every this many env steps
+    capo_start_step: int = 100_000  # warm up critic before enabling CAPO
     teacher_hold: bool = True  # keep last teacher between refreshes if still useful
     # If N*=0 (no challenger), keep the incumbent teacher instead of disabling.
     hold_teacher_on_nstar_zero: bool = True
@@ -148,7 +148,7 @@ class TrainConfig:
 
     eval_base_actor: bool = True  # legacy name; evaluates student θL
     eval_teacher_actor: bool = True
-    # Paired CRN eval at each CAMPI teacher refresh (certificate calibration).
+    # Paired CRN eval at each CAPO teacher refresh (certificate calibration).
     paired_eval_episodes: int = 40
     paired_eval_seed0: int = 10_000
 
@@ -157,7 +157,7 @@ class TrainConfig:
     save_best: bool = True
     log_interval: int = 1000
     use_wandb: bool = False
-    project: str = "CaPO"
+    project: str = "CAPO"
     group: str = "d4rl"
 
     def __post_init__(self):
@@ -265,7 +265,7 @@ def paired_eval_actors(
 ) -> Dict:
     """Common-random-number eval of teacher vs frozen student snapshot.
 
-    Diagnostics only — never used for CAMPI accept/reject.
+    Diagnostics only — never used for CAPO accept/reject.
     """
     st = eval_actor(env, student, device, len(episode_seeds), episode_seeds=episode_seeds)
     te = eval_actor(env, teacher, device, len(episode_seeds), episode_seeds=episode_seeds)
@@ -311,7 +311,7 @@ def paired_eval_actors(
     return out
 
 
-class CaPOTrainer:
+class CAPOTrainer:
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
         self.device = torch.device(cfg.device if torch.cuda.is_available() else "cpu")
@@ -338,7 +338,7 @@ class CaPOTrainer:
 
         std = np.asarray(stats.state_std, dtype=np.float64)
         print(
-            "[CaPO] state_normalization "
+            "[CAPO] state_normalization "
             f"enabled={bool(cfg.normalize)} "
             f"state_mean_shape={tuple(np.asarray(stats.state_mean).shape)} "
             f"state_std_min={float(std.min()):.6g} "
@@ -353,13 +353,13 @@ class CaPOTrainer:
         # θL: learning actor (critic always bootstraps from this)
         self.actor = Actor(self.state_dim, self.action_dim, self.max_action, cfg.hidden).to(self.device)
         self.actor_target = copy.deepcopy(self.actor)
-        # θR: CAMPI refinement / teacher (never used in critic targets)
+        # θR: CAPO refinement / teacher (never used in critic targets)
         self.refine_actor = copy.deepcopy(self.actor)
         self.deploy_actor = copy.deepcopy(self.actor)
         self.has_teacher = False
         self.teacher_n = 0
-        self.last_campi_info: Dict[str, float] = {}
-        self.last_campi_step = -10**9
+        self.last_capo_info: Dict[str, float] = {}
+        self.last_capo_step = -10**9
 
         self.critics = CriticEnsemble(
             self.state_dim,
@@ -385,7 +385,7 @@ class CaPOTrainer:
                 cfg.tau = 0.001
 
         self.refiner = ProximalW2Refiner(lr=cfg.refine_lr, n_steps=cfg.refine_steps)
-        self.campi_cfg = CAMPIConfig(
+        self.capo_cfg = CAPOConfig(
             n_max=cfg.n_max,
             beta_uncertainty=cfg.beta_uncertainty,
             shift_penalty_coef=cfg.shift_penalty_coef,
@@ -433,11 +433,11 @@ class CaPOTrainer:
             tp.data.mul_(1.0 - self.cfg.tau)
             tp.data.add_(self.cfg.tau * p.data)
 
-    def _campi_allowed(self) -> bool:
+    def _capo_allowed(self) -> bool:
         cfg = self.cfg
-        if not cfg.use_campi:
+        if not cfg.use_capo:
             return False
-        return self.total_it >= cfg.campi_start_step
+        return self.total_it >= cfg.capo_start_step
 
     def _teacher_bc_mse(self, states: Tensor, pi: Tensor) -> Tuple[Tensor, float, float]:
         """Detached teacher BC via element-wise MSE. Returns (mse, raw, active)."""
@@ -516,7 +516,7 @@ class CaPOTrainer:
             self.actor_opt.step()
             logs.update(actor_stats)
             self.actor_updates += 1
-            self._maybe_campi(logs)
+            self._maybe_capo(logs)
             self._soft_update(self.actor, self.actor_target)
             self._soft_update(self.critics, self.critics_target)
         return logs
@@ -563,7 +563,7 @@ class CaPOTrainer:
             "has_teacher": float(self.has_teacher),
         }
         self.actor_updates += 1
-        self._maybe_campi(logs)
+        self._maybe_capo(logs)
         return logs
 
     # --------------------------------------------------------------------- CQL
@@ -616,7 +616,7 @@ class CaPOTrainer:
             "has_teacher": float(self.has_teacher),
         }
         self.actor_updates += 1
-        self._maybe_campi(logs)
+        self._maybe_capo(logs)
         return logs
 
     def _split_critics(self):
@@ -626,37 +626,37 @@ class CaPOTrainer:
         mid = max(1, len(adapters) // 2)
         return adapters[:mid], adapters[mid:]
 
-    def _maybe_campi(self, logs: Dict[str, float]):
+    def _maybe_capo(self, logs: Dict[str, float]):
         cfg = self.cfg
-        if not cfg.use_campi:
+        if not cfg.use_capo:
             self.deploy_actor.load_state_dict(self.actor.state_dict())
             return
 
         # Only schedule after warm-start; first eligible step always refreshes.
-        if self.total_it < cfg.campi_start_step:
+        if self.total_it < cfg.capo_start_step:
             logs["has_teacher"] = float(self.has_teacher)
-            logs["campi_selected_n"] = float(self.teacher_n if self.has_teacher else 0)
+            logs["capo_selected_n"] = float(self.teacher_n if self.has_teacher else 0)
             return
-        first = self.last_campi_step < cfg.campi_start_step
-        due = first or (self.total_it - self.last_campi_step) >= cfg.campi_period
+        first = self.last_capo_step < cfg.capo_start_step
+        due = first or (self.total_it - self.last_capo_step) >= cfg.capo_period
         if not due:
             logs["has_teacher"] = float(self.has_teacher)
-            logs["campi_selected_n"] = float(self.teacher_n if self.has_teacher else 0)
+            logs["capo_selected_n"] = float(self.teacher_n if self.has_teacher else 0)
             return
 
-        cert_states, cert_actions, _, _, _ = self.buffer.sample(cfg.campi_eval_batch)
-        info = self._run_campi(cert_states, cert_actions)
-        self.last_campi_info = info
+        cert_states, cert_actions, _, _, _ = self.buffer.sample(cfg.capo_eval_batch)
+        info = self._run_capo(cert_states, cert_actions)
+        self.last_capo_info = info
         logs.update(info)
-        self.last_campi_step = self.total_it
-        acc_c = info.get("campi_accepted_cert", float("nan"))
-        stop_c = info.get("campi_stop_cert", float("nan"))
+        self.last_capo_step = self.total_it
+        acc_c = info.get("capo_accepted_cert", float("nan"))
+        stop_c = info.get("capo_stop_cert", float("nan"))
         delta = info.get("paired_delta_d4rl", float("nan"))
         print(
-            f"[CaPO] step={self.total_it} N*={int(info.get('campi_selected_n', 0))} "
-            f"accepted={int(info.get('campi_accepted', 0))} "
+            f"[CAPO] step={self.total_it} N*={int(info.get('capo_selected_n', 0))} "
+            f"accepted={int(info.get('capo_accepted', 0))} "
             f"accepted_cert={acc_c:.5f} stop_cert={stop_c:.5f} "
-            f"tau*={info.get('campi_selected_tau', float('nan'))} "
+            f"tau*={info.get('capo_selected_tau', float('nan'))} "
             f"pairedΔJ={delta if delta == delta else float('nan'):.2f} "
             f"teacher={int(self.has_teacher)}",
             flush=True,
@@ -693,16 +693,16 @@ class CaPOTrainer:
             candidate_policy=candidate_policy,
             states=states,
             tau=0.0,
-            cfg=self.campi_cfg,
+            cfg=self.capo_cfg,
             q_scale=q_scale,
             data_actions=data_actions,
         )
         return float(stats.certificate)
 
-    def _run_campi(self, states: Tensor, data_actions: Tensor) -> Dict[str, float]:
+    def _run_capo(self, states: Tensor, data_actions: Tensor) -> Dict[str, float]:
         gen_critics, cert_critics = self._split_critics()
         batch_scale = estimate_q_scale(
-            cert_critics, states, actions=data_actions, eps=self.campi_cfg.q_scale_eps
+            cert_critics, states, actions=data_actions, eps=self.capo_cfg.q_scale_eps
         )
         ema = float(self.cfg.q_scale_ema)
         self.q_scale = ema * self.q_scale + (1.0 - ema) * batch_scale
@@ -712,7 +712,7 @@ class CaPOTrainer:
             base_policy=self.actor,
             refiner=self.refiner,
             states=states,
-            cfg=self.campi_cfg,
+            cfg=self.capo_cfg,
             gen_critics=gen_critics,
             cert_critics=cert_critics,
             data_actions=data_actions,
@@ -725,41 +725,41 @@ class CaPOTrainer:
         if result.records and not result.records[-1].accepted:
             stop_rec = result.records[-1]
         info = {
-            "campi_selected_n": float(result.selected_n),
-            "campi_accepted": float(result.accepted),
-            "campi_q_scale": float(self.q_scale),
-            "campi_ladder": float(result.records[-1].ladder_value) if result.records else 0.0,
-            "campi_gated": 0.0,
-            "campi_n_records": float(len(result.records)),
+            "capo_selected_n": float(result.selected_n),
+            "capo_accepted": float(result.accepted),
+            "capo_q_scale": float(self.q_scale),
+            "capo_ladder": float(result.records[-1].ladder_value) if result.records else 0.0,
+            "capo_gated": 0.0,
+            "capo_n_records": float(len(result.records)),
         }
         if accepted_recs:
             # Cert of the last accepted ladder step (= cert of selected policy vs prior).
             last_acc = accepted_recs[-1]
-            info["campi_accepted_cert"] = float(last_acc.selected_certificate)
-            info["campi_selected_tau"] = float(last_acc.selected_tau) if last_acc.selected_tau is not None else float("nan")
-            info["campi_sum_accepted_cert"] = float(sum(r.selected_certificate for r in accepted_recs))
+            info["capo_accepted_cert"] = float(last_acc.selected_certificate)
+            info["capo_selected_tau"] = float(last_acc.selected_tau) if last_acc.selected_tau is not None else float("nan")
+            info["capo_sum_accepted_cert"] = float(sum(r.selected_certificate for r in accepted_recs))
             # Backward-compatible aliases: these now mean accepted, not last attempt.
-            info["campi_best_cert"] = float(last_acc.selected_certificate)
-            info["campi_last_cert"] = float(last_acc.selected_certificate)
+            info["capo_best_cert"] = float(last_acc.selected_certificate)
+            info["capo_last_cert"] = float(last_acc.selected_certificate)
             if last_acc.candidates:
                 best_acc = max(last_acc.candidates, key=lambda c: c.certificate)
-                info["campi_best_move"] = float(best_acc.movement)
-                info["campi_best_amse"] = float(best_acc.action_mse)
+                info["capo_best_move"] = float(best_acc.movement)
+                info["capo_best_amse"] = float(best_acc.action_mse)
         else:
-            info["campi_accepted_cert"] = float("nan")
-            info["campi_sum_accepted_cert"] = 0.0
+            info["capo_accepted_cert"] = float("nan")
+            info["capo_sum_accepted_cert"] = 0.0
         if stop_rec is not None:
-            info["campi_stop_cert"] = float(stop_rec.selected_certificate)
+            info["capo_stop_cert"] = float(stop_rec.selected_certificate)
             if stop_rec.candidates:
                 stop_best = max(stop_rec.candidates, key=lambda c: c.certificate)
-                info["campi_stop_best_cert"] = float(stop_best.certificate)
-                info["campi_stop_tau"] = float(stop_best.tau)
+                info["capo_stop_best_cert"] = float(stop_best.certificate)
+                info["capo_stop_tau"] = float(stop_best.tau)
         else:
-            info["campi_stop_cert"] = float("nan")
+            info["capo_stop_cert"] = float("nan")
         if result.movements:
-            info["campi_movement"] = float(result.movements[-1])
+            info["capo_movement"] = float(result.movements[-1])
         if result.selected_tau:
-            info["campi_tau_max_selected"] = float(max(result.selected_tau))
+            info["capo_tau_max_selected"] = float(max(result.selected_tau))
 
         # Persist full (n, τ) ladder for adaptive-selection analysis.
         ladder_path = self.run_dir / "capo_ladder.jsonl"
@@ -886,7 +886,7 @@ class CaPOTrainer:
             "selected_tau_per_step": list(result.selected_tau) if has_new else [],
             "accepted_cert_per_step": list(result.certificates) if has_new else [],
             "ladder_accepted": has_new,
-            "stop_cert": info.get("campi_stop_cert"),
+            "stop_cert": info.get("capo_stop_cert"),
             "student_to_new_cert": None if c_sn != c_sn else float(c_sn),
             "student_to_old_cert": None if c_so != c_so else float(c_so),
             "old_to_new_replace_cert": None if c_on != c_on else float(c_on),
@@ -1005,16 +1005,16 @@ class CaPOTrainer:
         last_eval: Dict[str, float] = {}
 
         print(
-            f"[CaPO] algo={cfg.algorithm} env={cfg.env} device={self.device} "
-            f"n_max={cfg.n_max} period={cfg.campi_period} "
-            f"start={cfg.campi_start_step} λ_D={cfg.lambda_D} λ_T={cfg.lambda_T} "
+            f"[CAPO] algo={cfg.algorithm} env={cfg.env} device={self.device} "
+            f"n_max={cfg.n_max} period={cfg.capo_period} "
+            f"start={cfg.capo_start_step} λ_D={cfg.lambda_D} λ_T={cfg.lambda_T} "
             f"bc_reduction={cfg.bc_reduction} "
             f"replace_gate={cfg.use_replace_gate} margin={cfg.replace_cert_margin} "
             f"tau_ctrl={cfg.tau_controller} δ={cfg.target_action_mse} "
             f"tau_pilot0={cfg.tau_pilot_initial}",
             flush=True,
         )
-        print(f"[CaPO] run_dir={self.run_dir}", flush=True)
+        print(f"[CAPO] run_dir={self.run_dir}", flush=True)
 
         for t in range(1, cfg.max_timesteps + 1):
             logs = self.train_step()
@@ -1024,13 +1024,13 @@ class CaPOTrainer:
                     f"t={t} critic={logs.get('critic_loss', 0):.4f}"
                     f" actor={logs.get('actor_loss', 0):.4f}"
                     f" teacher={int(logs.get('has_teacher', 0))}"
-                    f" N*={int(logs.get('campi_selected_n', logs.get('teacher_n', 0)))}"
+                    f" N*={int(logs.get('capo_selected_n', logs.get('teacher_n', 0)))}"
                     f" ({elapsed:.1f}s)"
                 )
                 print(msg, flush=True)
 
             if t % cfg.eval_freq == 0 or t == cfg.max_timesteps:
-                # Curve eval: student θL (teacher-guided after CAMPI starts — not a pure TD3+BC control)
+                # Curve eval: student θL (teacher-guided after CAPO starts — not a pure TD3+BC control)
                 curve_seeds = [cfg.seed * 100_000 + t + i for i in range(cfg.n_episodes)]
                 student_eval = eval_actor(
                     self.eval_env, self.actor, str(self.device), cfg.n_episodes, episode_seeds=curve_seeds
@@ -1046,14 +1046,14 @@ class CaPOTrainer:
                     },
                     **{
                         k: float(v)
-                        for k, v in self.last_campi_info.items()
+                        for k, v in self.last_capo_info.items()
                         if isinstance(v, (int, float)) and not isinstance(v, bool)
                     },
                     "has_teacher": float(self.has_teacher),
-                    "campi_selected_n": float(
+                    "capo_selected_n": float(
                         self.teacher_n
                         if self.has_teacher
-                        else self.last_campi_info.get("campi_selected_n", 0.0)
+                        else self.last_capo_info.get("capo_selected_n", 0.0)
                     ),
                 }
                 if "d4rl_score" in student_eval:
@@ -1138,7 +1138,7 @@ class CaPOTrainer:
             "algorithm": cfg.algorithm,
             "env": cfg.env,
             "seed": cfg.seed,
-            "campi_mode": "teacher",
+            "capo_mode": "teacher",
             "best_student_score": self.best_score,
             "best_learn_score": self.best_score,  # legacy alias
             "best_base_score": self.best_base_score,  # legacy alias (= student)
@@ -1146,8 +1146,8 @@ class CaPOTrainer:
             "run_dir": str(self.run_dir),
             "elapsed_sec": time.time() - t0,
             "note": (
-                "student_d4rl_score is θL under teacher guidance after CAMPI starts; "
-                "use --no_campi for pure TD3+BC control. "
+                "student_d4rl_score is θL under teacher guidance after CAPO starts; "
+                "use --no_capo for pure TD3+BC control. "
                 "Certificate calibration: see capo_refresh.jsonl paired ΔJ."
             ),
         }

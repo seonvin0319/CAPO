@@ -38,7 +38,7 @@ class ProxRefiner(Protocol):
 
 
 @dataclass(frozen=True)
-class CAMPIConfig:
+class CAPOConfig:
     n_max: int = 2
     beta_uncertainty: float = 2.0
     shift_penalty_coef: float = 1.0
@@ -87,7 +87,7 @@ class StepRecord:
 
 
 @dataclass
-class CAMPIResult:
+class CAPOResult:
     actor: Policy
     policies: List[Policy]
     records: List[StepRecord]
@@ -105,7 +105,7 @@ def _as_numpy(x: Tensor | np.ndarray | float) -> float:
     return float(x)
 
 
-def _filter_taus(cfg: CAMPIConfig) -> Tuple[float, ...]:
+def _filter_taus(cfg: CAPOConfig) -> Tuple[float, ...]:
     taus = tuple(float(t) for t in cfg.tau_candidates if float(t) <= float(cfg.tau_max) + 1e-12)
     if not taus:
         taus = (min(cfg.tau_candidates),)
@@ -210,7 +210,7 @@ def candidate_certificate(
     candidate_policy: Policy,
     states: Tensor,
     tau: float,
-    cfg: CAMPIConfig,
+    cfg: CAPOConfig,
     q_scale: float = 1.0,
     data_actions: Optional[Tensor] = None,
 ) -> CandidateStats:
@@ -277,7 +277,7 @@ def propose_tau(
 def _ensure_controller_state(
     tau_controller_state: Optional[List[dict]],
     n_max: int,
-    cfg: CAMPIConfig,
+    cfg: CAPOConfig,
 ) -> List[dict]:
     if tau_controller_state is None:
         tau_controller_state = []
@@ -301,7 +301,7 @@ def _refine_and_certify(
     center: Policy,
     states: Tensor,
     tau: float,
-    cfg: CAMPIConfig,
+    cfg: CAPOConfig,
     q_scale: float,
     data_actions: Optional[Tensor],
 ) -> Tuple[Policy, CandidateStats]:
@@ -332,7 +332,7 @@ def _pilot_adaptive_step(
     gen_critics: Sequence[Critic],
     cert_critics: Sequence[Critic],
     states: Tensor,
-    cfg: CAMPIConfig,
+    cfg: CAPOConfig,
     q_scale: float,
     data_actions: Optional[Tensor],
     controller_n: dict,
@@ -439,7 +439,7 @@ def calibrated_adaptive_mpi(
     base_policy: Policy,
     refiner: ProxRefiner,
     states: Tensor,
-    cfg: CAMPIConfig,
+    cfg: CAPOConfig,
     *,
     gen_critics: Optional[Sequence[Critic]] = None,
     cert_critics: Optional[Sequence[Critic]] = None,
@@ -448,7 +448,7 @@ def calibrated_adaptive_mpi(
     q_scale: Optional[float] = None,
     initial_ladder_value: float = 0.0,
     tau_controller_state: Optional[List[dict]] = None,
-) -> CAMPIResult:
+) -> CAPOResult:
     """Run capped adaptive MPI with held-out certificate selection.
 
     Args:
@@ -599,7 +599,7 @@ def calibrated_adaptive_mpi(
         )
 
     final = policies[-1]
-    return CAMPIResult(
+    return CAPOResult(
         actor=final,
         policies=policies,
         records=records,

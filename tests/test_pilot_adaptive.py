@@ -17,14 +17,14 @@ if str(ROOT) not in sys.path:
 
 from capo.buffer import NormalizeObsWrapper, normalize_states  # noqa: E402
 from capo.core import (  # noqa: E402
-    CAMPIConfig,
+    CAPOConfig,
     calibrated_adaptive_mpi,
     clip_tau,
     propose_adaptive_tau,
     taus_are_duplicates,
 )
 from capo.networks import Actor, CriticEnsemble  # noqa: E402
-from capo.trainer import CaPOTrainer, TrainConfig  # noqa: E402
+from capo.trainer import CAPOTrainer, TrainConfig  # noqa: E402
 
 
 class TinyPolicy(nn.Module):
@@ -66,7 +66,7 @@ class ScriptedRefiner:
 def test_tau0_first_refresh_is_pilot_initial():
     states = torch.zeros(16, 3)
     refiner = ScriptedRefiner()
-    cfg = CAMPIConfig(
+    cfg = CAPOConfig(
         n_max=1,
         tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
@@ -106,7 +106,7 @@ def test_at_most_two_candidates_and_duplicate_skip():
     states = torch.zeros(16, 3)
     # movement0 = tau0^2 = 0.0025, delta=0.0025 => tau1 == tau0 => one candidate
     refiner = ScriptedRefiner()
-    cfg = CAMPIConfig(
+    cfg = CAPOConfig(
         n_max=1,
         tau_controller="pilot_adaptive",
         tau_pilot_initial=0.05,
@@ -134,7 +134,7 @@ def test_at_most_two_candidates_and_duplicate_skip():
     assert result.records[0].diagnostics["tau_candidate_count"] == 1.0
 
     refiner2 = ScriptedRefiner()
-    cfg2 = CAMPIConfig(
+    cfg2 = CAPOConfig(
         n_max=1,
         tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
@@ -180,7 +180,7 @@ def test_n_star_one_and_prev_tau_update_only_on_accept():
             return out
 
     refiner = TwoStepRefiner()
-    cfg = CAMPIConfig(
+    cfg = CAPOConfig(
         n_max=2,
         tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
@@ -212,7 +212,7 @@ def test_n_star_one_and_prev_tau_update_only_on_accept():
 
 
 def test_actor_loss_formula_qscale_detached_teacher_no_grad():
-    cfg = TrainConfig(algorithm="td3_bc", use_campi=False, normalize=False, max_timesteps=1)
+    cfg = TrainConfig(algorithm="td3_bc", use_capo=False, normalize=False, max_timesteps=1)
     state_dim, action_dim = 4, 2
     actor = Actor(state_dim, action_dim, max_action=1.0)
     critics = CriticEnsemble(state_dim, action_dim, n_critics=2)
@@ -229,11 +229,11 @@ def test_actor_loss_formula_qscale_detached_teacher_no_grad():
     h.critics = critics
     h.refine_actor = teacher
     h.has_teacher = True
-    h._teacher_bc_mse = CaPOTrainer._teacher_bc_mse.__get__(h, Holder)
+    h._teacher_bc_mse = CAPOTrainer._teacher_bc_mse.__get__(h, Holder)
 
     states = torch.randn(8, state_dim)
     actions = torch.randn(8, action_dim)
-    loss, stats = CaPOTrainer.compute_td3bc_actor_loss(h, states, actions)
+    loss, stats = CAPOTrainer.compute_td3bc_actor_loss(h, states, actions)
     loss.backward()
     for p in teacher.parameters():
         assert p.grad is None or float(p.grad.abs().sum()) == 0.0
@@ -255,7 +255,7 @@ def test_actor_loss_formula_qscale_detached_teacher_no_grad():
     assert stats["bc_reduction"] == "element_mean"
 
     h.has_teacher = False
-    loss2, stats2 = CaPOTrainer.compute_td3bc_actor_loss(h, states, actions)
+    loss2, stats2 = CAPOTrainer.compute_td3bc_actor_loss(h, states, actions)
     pi2 = actor.act(states)
     q2 = critics.q_mean(states, pi2)
     qs2 = q2.abs().mean().detach() + cfg.actor_q_scale_eps

@@ -17,10 +17,10 @@ def load_jsonl(path: Path):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("campi_run_dir", type=str)
+    p.add_argument("capo_run_dir", type=str)
     p.add_argument("--control_run_dir", type=str, default=None)
     args = p.parse_args()
-    run = Path(args.campi_run_dir)
+    run = Path(args.capo_run_dir)
     rows = load_jsonl(run / "capo_refresh.jsonl")
     accepted = [r for r in rows if r.get("accepted_by_cert")]
     print(f"refresh events: {len(rows)}  accepted_by_cert: {len(accepted)}")
@@ -57,7 +57,7 @@ def main():
             f"SE = {deltas.std(ddof=1)/np.sqrt(len(deltas)):.3f}"
         )
 
-    ladder = load_jsonl(run / "campi_ladder.jsonl")
+    ladder = load_jsonl(run / "capo_ladder.jsonl")
     if ladder:
         ns = [r["selected_n"] for r in ladder]
         taus = [t for r in ladder for t in r.get("selected_taus", [])]
@@ -94,7 +94,7 @@ def main():
             (cb_step, cb_sc), (cf_step, cf_sc) = best_score(cdir)
             (mb_step, mb_sc), (mf_step, mf_sc) = mb
             print(
-                f"student CAMPI best={mb_sc:.2f}@{mb_step} final={mf_sc:.2f} | "
+                f"student CAPO best={mb_sc:.2f}@{mb_step} final={mf_sc:.2f} | "
                 f"control best={cb_sc:.2f}@{cb_step} final={cf_sc:.2f} | "
                 f"Δfinal={mf_sc-cf_sc:.2f}"
             )

@@ -1,4 +1,4 @@
-"""Tabular CAMPI validation with exact returns and certificate diagnostics."""
+"""Tabular CAPO validation with exact returns and certificate diagnostics."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -23,7 +23,7 @@ class TabularData:
 
 
 @dataclass
-class TabularCAMPIConfig:
+class TabularCAPOConfig:
     n_max: int = 3
     taus: Tuple[float, ...] = (0.05, 0.1, 0.2, 0.5)
     beta: float = 2.0
@@ -77,11 +77,11 @@ def expected_return(mdp: TabularMDP, pi: np.ndarray) -> float:
     return float(mdp.init_dist @ V)
 
 
-def campi_tabular(
+def capo_tabular(
     true_mdp: TabularMDP,
     data: TabularData,
     pi0: np.ndarray,
-    cfg: TabularCAMPIConfig,
+    cfg: TabularCAPOConfig,
 ) -> Dict[str, object]:
     emp = empirical_mdp(data, true_mdp.gamma, true_mdp.init_dist)
     bonus = bernstein_bonus(data, true_mdp.gamma)
@@ -179,9 +179,9 @@ def run_tabular_demo(seed: int = 0, n_transitions: int = 8000) -> Dict[str, obje
     # Intentionally suboptimal start: uniform policy.
     S, A = mdp.R.shape
     pi0 = np.ones((S, A)) / A
-    cfg = TabularCAMPIConfig(beta=1.0, min_count=1)
-    out = campi_tabular(mdp, data, pi0, cfg)
-    print("Tabular CAMPI demo (dense coverage MDP)")
+    cfg = TabularCAPOConfig(beta=1.0, min_count=1)
+    out = capo_tabular(mdp, data, pi0, cfg)
+    print("Tabular CAPO demo (dense coverage MDP)")
     print(f"  true_J sequence: {[round(x, 4) for x in out['true_J']]}")
     print(f"  selected_n: {len(out['true_J']) - 1}")
     print(f"  ladder: {out['ladder']:.4f}")

@@ -1,4 +1,6 @@
-# Canonical CAPO defaults (v8 teacher + hold-teacher + replace gate)
+# Compatibility alias for an already-running matrix queue that still
+# points at configs/matrix_defaults.yaml. Prefer configs/defaults.yaml.
+# Safe to delete after the current queue is restarted.
 seed: 0
 device: cuda
 max_timesteps: 1000000

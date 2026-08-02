@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CaPO matrix: 3 algos × 3 env bases × 3 datasets = 27 runs (seed 0, sequential)
+# CAPO matrix: 3 algos × 3 env bases × 3 datasets = 27 runs (seed 0, sequential)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -49,7 +49,7 @@ latest_run_dir() {
   ls -dt "$base"/[0-9][0-9][0-9][0-9]_*_"${algo}"_"${env_id}"_s"${seed}" 2>/dev/null | head -1
 }
 
-echo "[CaPO matrix] 27 jobs → $OUT_DIR (seed=$SEED device=$DEVICE config=$CONFIG)"
+echo "[CAPO matrix] 27 jobs → $OUT_DIR (seed=$SEED device=$DEVICE config=$CONFIG)"
 
 for algo in "${ALGOS[@]}"; do
   for envb in "${ENVS[@]}"; do
@@ -90,5 +90,5 @@ for algo in "${ALGOS[@]}"; do
   done
 done
 
-echo "[CaPO matrix] finished. status=$STATUS_FILE"
+echo "[CAPO matrix] finished. status=$STATUS_FILE"
 "$PYTHON" scripts/summarize_matrix.py --out_dir "$OUT_DIR" || true

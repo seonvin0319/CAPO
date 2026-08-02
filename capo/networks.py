@@ -1,4 +1,4 @@
-"""Actor / critic / value networks for CAMPI on D4RL."""
+"""Actor / critic / value networks for CAPO on D4RL."""
 from __future__ import annotations
 
 from typing import Sequence

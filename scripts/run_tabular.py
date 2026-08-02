@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run tabular CaPO validation demo."""
+"""Run tabular CAPO validation demo."""
 from __future__ import annotations
 
 import argparse

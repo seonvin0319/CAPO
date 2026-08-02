@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train CaPO on D4RL with TD3+BC / IQL / CQL bases."""
+"""Train CAPO on D4RL with TD3+BC / IQL / CQL bases."""
 from __future__ import annotations
 
 import argparse
@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from capo.trainer import CaPOTrainer, TrainConfig  # noqa: E402
+from capo.trainer import CAPOTrainer, TrainConfig  # noqa: E402
 
 ENV_ALIASES = {
     "hopper": "hopper-medium-v2",
@@ -36,7 +36,7 @@ DATASET_ALIASES = {
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Run CaPO on D4RL")
+    p = argparse.ArgumentParser(description="Run CAPO on D4RL")
     p.add_argument("--config", type=str, default=None)
     p.add_argument("--algorithm", type=str, default=None, choices=["td3_bc", "iql", "cql", "td3bc"])
     p.add_argument("--env", type=str, default=None, help="Full D4RL id or alias")
@@ -48,10 +48,10 @@ def parse_args():
     p.add_argument("--eval_freq", type=int, default=None)
     p.add_argument("--n_episodes", type=int, default=None)
     p.add_argument("--out_dir", type=str, default=None)
-    p.add_argument("--no_campi", action="store_true")
+    p.add_argument("--no_capo", action="store_true")
     p.add_argument("--n_max", type=int, default=None)
-    p.add_argument("--campi_period", type=int, default=None)
-    p.add_argument("--campi_start_step", type=int, default=None)
+    p.add_argument("--capo_period", type=int, default=None)
+    p.add_argument("--capo_start_step", type=int, default=None)
     p.add_argument("--lambda_D", type=float, default=None)
     p.add_argument("--lambda_T", type=float, default=None)
     p.add_argument("--tau_pilot_initial", type=float, default=None)
@@ -101,14 +101,14 @@ def load_config(args) -> TrainConfig:
         cfg.n_episodes = args.n_episodes
     if args.out_dir is not None:
         cfg.out_dir = args.out_dir
-    if args.no_campi:
-        cfg.use_campi = False
+    if args.no_capo:
+        cfg.use_capo = False
     if args.n_max is not None:
         cfg.n_max = args.n_max
-    if args.campi_period is not None:
-        cfg.campi_period = args.campi_period
-    if args.campi_start_step is not None:
-        cfg.campi_start_step = args.campi_start_step
+    if args.capo_period is not None:
+        cfg.capo_period = args.capo_period
+    if args.capo_start_step is not None:
+        cfg.capo_start_step = args.capo_start_step
     if args.lambda_D is not None:
         cfg.lambda_D = args.lambda_D
     if args.lambda_T is not None:
@@ -143,7 +143,7 @@ def main():
     os.environ.setdefault("MUJOCO_GL", "egl")
     args = parse_args()
     cfg = load_config(args)
-    trainer = CaPOTrainer(cfg)
+    trainer = CAPOTrainer(cfg)
     trainer.train()
 
 

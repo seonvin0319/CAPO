@@ -1,12 +1,12 @@
-"""CaPO — Calibrated Adaptive Multi-step Proximal Improvement (teacher-guided offline RL)."""
+"""CAPO — Calibrated Adaptive Policy Optimization (teacher-guided offline RL)."""
 
-from .core import CAMPIConfig, CAMPIResult, calibrated_adaptive_mpi
-from .trainer import CaPOTrainer, TrainConfig
+from .core import CAPOConfig, CAPOResult, calibrated_adaptive_mpi
+from .trainer import CAPOTrainer, TrainConfig
 
 __all__ = [
-    "CAMPIConfig",
-    "CAMPIResult",
-    "CaPOTrainer",
+    "CAPOConfig",
+    "CAPOResult",
+    "CAPOTrainer",
     "TrainConfig",
     "calibrated_adaptive_mpi",
 ]
