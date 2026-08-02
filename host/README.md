@@ -88,7 +88,7 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
      `baseline` → `configs/baseline_cql.yaml`).
 8. **Pipeline ownership (seed 0).**
    - **choi:** finish current CAPO × 9 → CAPO medium-expert × 3 →
-     baseline td3bc × 9 (`medium` / `medium-expert` / `replay`)
+     baseline td3bc × 9 (`medium` / `medium-expert` / `medium-replay`)
      (`scripts/queue_choi_pipeline.sh`; status `queue_status.tsv` /
      `queue_status_baseline.tsv`)
    - **ext_csh:** v8 hold × 9 — `configs/v8_hold.yaml` /
