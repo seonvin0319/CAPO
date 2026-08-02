@@ -39,7 +39,7 @@ bc_reduction: element_mean
 teacher_hold: true
 hold_teacher_on_nstar_zero: true
 use_replace_gate: true
-replace_cert_margin: 0.01
+replace_cert_margin: 0.0
 
 # CQL-specific (also applied by run_capo.py when algorithm=cql)
 cql_policy_lr: 3.0e-5
