@@ -17,7 +17,7 @@ OUT_DIR="${OUT_DIR:-results}"
 ALGO="cql"
 
 ENVS=(hopper halfcheetah walker2d)
-DATASETS=(medium expert replay)
+DATASETS=(medium medium-expert medium-replay)
 # status key | config | run_tag
 VARIANTS=(
   "capo|configs/defaults.yaml|capo"
@@ -52,20 +52,17 @@ mark() {
 latest_run_dir() {
   local env_id="$1" seed="$2" tag="$3"
   local pat="[0-9][0-9][0-9][0-9]_*_${tag}_${ALGO}_${env_id}_s${seed}"
+  # New layout: results/<algo>/<env>/s<seed>/...
   local base_new="$OUT_DIR/$ALGO/$env_id/s${seed}"
-  local base_old="$OUT_DIR/$env_id/s${seed}"
-  local hit=""
   if [[ -d "$base_new" ]]; then
+    local hit
     hit="$(ls -dt "$base_new"/$pat 2>/dev/null | head -1 || true)"
+    [[ -n "$hit" ]] && { echo "$hit"; return 0; }
   fi
-  if [[ -z "$hit" && -d "$base_old" ]]; then
-    hit="$(ls -dt "$base_old"/$pat 2>/dev/null | head -1 || true)"
-  fi
-  [[ -n "$hit" ]] || return 1
-  if [[ -L "$hit" ]]; then
-    hit="$(readlink -f "$hit")"
-  fi
-  echo "$hit"
+  # Legacy layout: results/<env>/s<seed>/...
+  local base_old="$OUT_DIR/$env_id/s${seed}"
+  [[ -d "$base_old" ]] || return 1
+  ls -dt "$base_old"/$pat 2>/dev/null | head -1
 }
 
 echo "[CAPO CQL matrix] 18 jobs (capo + baseline cql × 9 envs) → $OUT_DIR (seed=$SEED device=$DEVICE python=$PYTHON)"
@@ -80,8 +77,9 @@ for spec in "${VARIANTS[@]}"; do
       fi
       case "$ds" in
         medium) env_id="${envb}-medium-v2" ;;
-        expert) env_id="${envb}-expert-v2" ;;
-        replay) env_id="${envb}-medium-replay-v2" ;;
+        medium-expert|medium_expert) env_id="${envb}-medium-expert-v2" ;;
+        medium-replay|medium_replay|replay) env_id="${envb}-medium-replay-v2" ;;
+        expert) env_id="${envb}-expert-v2" ;;  # legacy; not in DATASETS
       esac
       started="$(date '+%F %T')"
       mark "$variant" "$envb" "$ds" "running" "pending" "$started" ""
