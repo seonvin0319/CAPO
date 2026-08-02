@@ -17,7 +17,8 @@ OUT_DIR="${OUT_DIR:-results}"
 ALGO="iql"
 
 ENVS=(hopper halfcheetah walker2d)
-DATASETS=(medium expert replay)
+# medium-expert replaces expert for offrl IQL matrix
+DATASETS=(medium medium-expert replay)
 # status key | config | run_tag
 VARIANTS=(
   "capo|configs/defaults.yaml|capo"
@@ -83,7 +84,9 @@ for spec in "${VARIANTS[@]}"; do
       case "$ds" in
         medium) env_id="${envb}-medium-v2" ;;
         expert) env_id="${envb}-expert-v2" ;;
+        medium-expert|medium_expert) env_id="${envb}-medium-expert-v2" ;;
         replay) env_id="${envb}-medium-replay-v2" ;;
+        *) echo "[err] unknown dataset=$ds"; exit 1 ;;
       esac
       started="$(date '+%F %T')"
       mark "$variant" "$envb" "$ds" "running" "pending" "$started" ""

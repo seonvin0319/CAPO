@@ -19,7 +19,8 @@ RUN_TAG="v8_hold"
 ALGO="iql"
 
 ENVS=(hopper halfcheetah walker2d)
-DATASETS=(medium expert replay)
+# medium-expert replaces expert for offrl IQL matrix
+DATASETS=(medium medium-expert replay)
 
 STATUS_FILE="$OUT_DIR/queue_status_v8_hold_iql.tsv"
 mkdir -p "$OUT_DIR"
@@ -75,7 +76,9 @@ for envb in "${ENVS[@]}"; do
     case "$ds" in
       medium) env_id="${envb}-medium-v2" ;;
       expert) env_id="${envb}-expert-v2" ;;
+      medium-expert|medium_expert) env_id="${envb}-medium-expert-v2" ;;
       replay) env_id="${envb}-medium-replay-v2" ;;
+      *) echo "[err] unknown dataset=$ds"; exit 1 ;;
     esac
     started="$(date '+%F %T')"
     mark "$envb" "$ds" "running" "pending" "$started" ""

@@ -1,28 +1,34 @@
 variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finished,eta,notes,updated_at
-capo,iql,hopper,medium,0,done,configs/defaults.yaml,capo,results/iql/hopper-medium-v2/s0/0803_0100_capo_iql_hopper-medium-v2_s0,2026-08-03 01:00:45,2026-08-03 01:43:55,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,hopper,expert,0,done,configs/defaults.yaml,capo,results/iql/hopper-expert-v2/s0/0803_0143_capo_iql_hopper-expert-v2_s0,2026-08-03 01:43:55,2026-08-03 02:28:46,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,hopper,replay,0,done,configs/defaults.yaml,capo,results/iql/hopper-medium-replay-v2/s0/0803_0228_capo_iql_hopper-medium-replay-v2_s0,2026-08-03 02:28:46,2026-08-03 03:11:22,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,halfcheetah,medium,0,done,configs/defaults.yaml,capo,results/iql/halfcheetah-medium-v2/s0/0803_0311_capo_iql_halfcheetah-medium-v2_s0,2026-08-03 03:11:22,2026-08-03 03:55:15,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,halfcheetah,expert,0,done,configs/defaults.yaml,capo,results/iql/halfcheetah-expert-v2/s0/0803_0355_capo_iql_halfcheetah-expert-v2_s0,2026-08-03 03:55:15,2026-08-03 04:39:21,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,halfcheetah,replay,0,done,configs/defaults.yaml,capo,results/iql/halfcheetah-medium-replay-v2/s0/0803_0439_capo_iql_halfcheetah-medium-replay-v2_s0,2026-08-03 04:39:21,2026-08-03 05:23:21,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,walker2d,medium,0,done,configs/defaults.yaml,capo,results/iql/walker2d-medium-v2/s0/0803_0523_capo_iql_walker2d-medium-v2_s0,2026-08-03 05:23:21,2026-08-03 06:10:10,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,walker2d,expert,0,done,configs/defaults.yaml,capo,results/iql/walker2d-expert-v2/s0/0803_0610_capo_iql_walker2d-expert-v2_s0,2026-08-03 06:10:10,2026-08-03 06:57:45,,canonical results/iql/...,2026-08-03 08:46:27
-capo,iql,walker2d,replay,0,done,configs/defaults.yaml,capo,results/iql/walker2d-medium-replay-v2/s0/0803_0657_capo_iql_walker2d-medium-replay-v2_s0,2026-08-03 06:57:45,2026-08-03 07:41:48,,canonical results/iql/...,2026-08-03 08:46:27
-baseline,iql,hopper,medium,0,done,configs/baseline_iql.yaml,baseline,results/iql/hopper-medium-v2/s0/0803_0741_baseline_iql_hopper-medium-v2_s0,2026-08-03 07:41:48,2026-08-03 08:21:52,,canonical results/iql/...,2026-08-03 08:46:27
-baseline,iql,hopper,expert,0,running,configs/baseline_iql.yaml,baseline,results/iql/hopper-expert-v2/s0/0803_0821_baseline_iql_hopper-expert-v2_s0,2026-08-03 08:21:52,,~16min cell; iql~2026-08-03 13:44,cleaned results/; 608k/1000k,2026-08-03 08:46:27
-baseline,iql,hopper,replay,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-baseline,iql,halfcheetah,medium,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-baseline,iql,halfcheetah,expert,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-baseline,iql,halfcheetah,replay,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-baseline,iql,walker2d,medium,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-baseline,iql,walker2d,expert,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-baseline,iql,walker2d,replay,0,queued,configs/baseline_iql.yaml,baseline,,,,,defaults baseline IQL remaining,2026-08-03 08:46:27
-v8_hold,iql,hopper,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,hopper,expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,hopper,replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,halfcheetah,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,halfcheetah,expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,halfcheetah,replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,walker2d,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,walker2d,expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
-v8_hold,iql,walker2d,replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,after iql; ~2026-08-03 13:44→2026-08-03 19:47,waiter live,2026-08-03 08:46:27
+capo,iql,hopper,medium,0,done,configs/defaults.yaml,capo,results/iql/hopper-medium-v2/s0/0803_0100_capo_iql_hopper-medium-v2_s0,2026-08-03 01:00:45,2026-08-03 01:43:55,,defaults CAPO IQL,2026-08-03 08:49:29
+capo,iql,hopper,expert,0,done,configs/defaults.yaml,capo,results/iql/hopper-expert-v2/s0/0803_0143_capo_iql_hopper-expert-v2_s0,2026-08-03 01:43:55,2026-08-03 02:28:46,,done kept; expert superseded by medium-expert queue,2026-08-03 08:49:29
+capo,iql,hopper,replay,0,done,configs/defaults.yaml,capo,results/iql/hopper-medium-replay-v2/s0/0803_0228_capo_iql_hopper-medium-replay-v2_s0,2026-08-03 02:28:46,2026-08-03 03:11:22,,defaults CAPO IQL,2026-08-03 08:49:29
+capo,iql,hopper,medium-expert,0,queued,configs/defaults.yaml,capo,,,,,replaces expert; after current baseline hopper-expert finishes,2026-08-03 08:49:29
+capo,iql,halfcheetah,medium,0,done,configs/defaults.yaml,capo,results/iql/halfcheetah-medium-v2/s0/0803_0311_capo_iql_halfcheetah-medium-v2_s0,2026-08-03 03:11:22,2026-08-03 03:55:15,,defaults CAPO IQL,2026-08-03 08:49:29
+capo,iql,halfcheetah,expert,0,done,configs/defaults.yaml,capo,results/iql/halfcheetah-expert-v2/s0/0803_0355_capo_iql_halfcheetah-expert-v2_s0,2026-08-03 03:55:15,2026-08-03 04:39:21,,done kept; expert superseded by medium-expert queue,2026-08-03 08:49:29
+capo,iql,halfcheetah,replay,0,done,configs/defaults.yaml,capo,results/iql/halfcheetah-medium-replay-v2/s0/0803_0439_capo_iql_halfcheetah-medium-replay-v2_s0,2026-08-03 04:39:21,2026-08-03 05:23:21,,defaults CAPO IQL,2026-08-03 08:49:29
+capo,iql,halfcheetah,medium-expert,0,queued,configs/defaults.yaml,capo,,,,,replaces expert; after current baseline hopper-expert finishes,2026-08-03 08:49:29
+capo,iql,walker2d,medium,0,done,configs/defaults.yaml,capo,results/iql/walker2d-medium-v2/s0/0803_0523_capo_iql_walker2d-medium-v2_s0,2026-08-03 05:23:21,2026-08-03 06:10:10,,defaults CAPO IQL,2026-08-03 08:49:29
+capo,iql,walker2d,expert,0,done,configs/defaults.yaml,capo,results/iql/walker2d-expert-v2/s0/0803_0610_capo_iql_walker2d-expert-v2_s0,2026-08-03 06:10:10,2026-08-03 06:57:45,,done kept; expert superseded by medium-expert queue,2026-08-03 08:49:29
+capo,iql,walker2d,replay,0,done,configs/defaults.yaml,capo,results/iql/walker2d-medium-replay-v2/s0/0803_0657_capo_iql_walker2d-medium-replay-v2_s0,2026-08-03 06:57:45,2026-08-03 07:41:48,,defaults CAPO IQL,2026-08-03 08:49:29
+capo,iql,walker2d,medium-expert,0,queued,configs/defaults.yaml,capo,,,,,replaces expert; after current baseline hopper-expert finishes,2026-08-03 08:49:29
+baseline,iql,hopper,medium,0,done,configs/baseline_iql.yaml,baseline,results/iql/hopper-medium-v2/s0/0803_0741_baseline_iql_hopper-medium-v2_s0,2026-08-03 07:41:48,2026-08-03 08:21:52,,done,2026-08-03 08:49:29
+baseline,iql,hopper,expert,0,running,configs/baseline_iql.yaml,baseline,results/iql/hopper-expert-v2/s0/0803_0821_baseline_iql_hopper-expert-v2_s0,2026-08-03 08:21:52,,~finish then switch; 683k/1000k,finish this cell only; no more expert cells,2026-08-03 08:49:29
+baseline,iql,hopper,replay,0,queued,configs/baseline_iql.yaml,baseline,,,,,will run after switcher (medium-expert matrix),2026-08-03 08:49:29
+baseline,iql,hopper,medium-expert,0,queued,configs/baseline_iql.yaml,baseline,,,,,replaces expert; after switcher relaunch,2026-08-03 08:49:29
+baseline,iql,halfcheetah,medium,0,queued,configs/baseline_iql.yaml,baseline,,,,,will run after switcher (medium-expert matrix),2026-08-03 08:49:29
+baseline,iql,halfcheetah,expert,0,cancelled,configs/baseline_iql.yaml,baseline,,,,,cancelled; use medium-expert,2026-08-03 08:49:29
+baseline,iql,halfcheetah,replay,0,queued,configs/baseline_iql.yaml,baseline,,,,,will run after switcher (medium-expert matrix),2026-08-03 08:49:29
+baseline,iql,halfcheetah,medium-expert,0,queued,configs/baseline_iql.yaml,baseline,,,,,replaces expert; after switcher relaunch,2026-08-03 08:49:29
+baseline,iql,walker2d,medium,0,queued,configs/baseline_iql.yaml,baseline,,,,,will run after switcher (medium-expert matrix),2026-08-03 08:49:29
+baseline,iql,walker2d,expert,0,cancelled,configs/baseline_iql.yaml,baseline,,,,,cancelled; use medium-expert,2026-08-03 08:49:29
+baseline,iql,walker2d,replay,0,queued,configs/baseline_iql.yaml,baseline,,,,,will run after switcher (medium-expert matrix),2026-08-03 08:49:29
+baseline,iql,walker2d,medium-expert,0,queued,configs/baseline_iql.yaml,baseline,,,,,replaces expert; after switcher relaunch,2026-08-03 08:49:29
+v8_hold,iql,hopper,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,hopper,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,hopper,replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,halfcheetah,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,halfcheetah,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,halfcheetah,replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,walker2d,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,walker2d,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
+v8_hold,iql,walker2d,replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,after iql matrix; expert→medium-expert,2026-08-03 08:49:29
