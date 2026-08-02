@@ -1,0 +1,26 @@
+# Short smoke-test config (~few minutes on a single GPU)
+env: hopper-medium-v2
+seed: 0
+device: cuda
+max_timesteps: 2000
+eval_freq: 1000
+n_episodes: 3
+batch_size: 256
+log_interval: 500
+
+alpha: 2.5
+normalize: true
+normalize_reward: true
+n_critics: 4
+
+use_campi: true
+n_max: 2
+beta_uncertainty: 1.0
+shift_penalty_coef: 0.1
+tau_candidates: [0.005, 0.01]
+refine_steps: 3
+campi_period: 1000
+campi_start_step: 500
+campi_eval_batch: 512
+
+out_dir: results

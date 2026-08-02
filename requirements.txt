@@ -1,0 +1,10 @@
+# Preferred env on this machine: conda activate offrl_backup
+# torch / d4rl / mujoco-py are assumed preinstalled there.
+
+numpy>=1.23,<2.0
+pyyaml>=6.0
+tqdm>=4.64
+gym==0.23.0
+# d4rl: pip install git+https://github.com/Farama-Foundation/D4RL.git
+# torch: install a CUDA build matching your driver
+pyrallis>=0.3.1

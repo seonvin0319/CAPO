@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""Train CaPO on D4RL with TD3+BC / IQL / CQL bases."""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from capo.trainer import CaPOTrainer, TrainConfig  # noqa: E402
+
+ENV_ALIASES = {
+    "hopper": "hopper-medium-v2",
+    "halfcheetah": "halfcheetah-medium-v2",
+    "walker2d": "walker2d-medium-v2",
+    "umaze": "antmaze-umaze-v2",
+    "antmaze-umaze": "antmaze-umaze-v2",
+    "antmaze": "antmaze-umaze-v2",
+}
+
+DATASET_ALIASES = {
+    "medium": "medium-v2",
+    "expert": "expert-v2",
+    "replay": "medium-replay-v2",
+    "medium-replay": "medium-replay-v2",
+    "medium_replay": "medium-replay-v2",
+    "medium-expert": "medium-expert-v2",
+    "medium_expert": "medium-expert-v2",
+}
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description="Run CaPO on D4RL")
+    p.add_argument("--config", type=str, default=None)
+    p.add_argument("--algorithm", type=str, default=None, choices=["td3_bc", "iql", "cql", "td3bc"])
+    p.add_argument("--env", type=str, default=None, help="Full D4RL id or alias")
+    p.add_argument("--env_base", type=str, default=None, choices=["hopper", "halfcheetah", "walker2d"])
+    p.add_argument("--dataset", type=str, default=None, help="medium | expert | replay")
+    p.add_argument("--seed", type=int, default=None)
+    p.add_argument("--device", type=str, default=None)
+    p.add_argument("--max_timesteps", type=int, default=None)
+    p.add_argument("--eval_freq", type=int, default=None)
+    p.add_argument("--n_episodes", type=int, default=None)
+    p.add_argument("--out_dir", type=str, default=None)
+    p.add_argument("--no_campi", action="store_true")
+    p.add_argument("--n_max", type=int, default=None)
+    p.add_argument("--campi_period", type=int, default=None)
+    p.add_argument("--campi_start_step", type=int, default=None)
+    p.add_argument("--lambda_D", type=float, default=None)
+    p.add_argument("--lambda_T", type=float, default=None)
+    p.add_argument("--tau_pilot_initial", type=float, default=None)
+    p.add_argument("--target_action_mse", type=float, default=None)
+    p.add_argument("--batch_size", type=int, default=None)
+    p.add_argument("--beta_uncertainty", type=float, default=None)
+    p.add_argument("--max_action_mse", type=float, default=None)
+    p.add_argument("--replace_cert_margin", type=float, default=None)
+    return p.parse_args()
+
+
+def resolve_env(args) -> str | None:
+    if args.env_base and args.dataset:
+        ds = DATASET_ALIASES.get(args.dataset.lower(), args.dataset)
+        if not ds.endswith("-v2") and not ds.endswith("_v2"):
+            ds = DATASET_ALIASES.get(args.dataset.lower(), f"{args.dataset}-v2")
+        return f"{args.env_base}-{ds}"
+    if args.env:
+        return ENV_ALIASES.get(args.env.lower(), args.env)
+    return None
+
+
+def load_config(args) -> TrainConfig:
+    cfg_dict = {}
+    if args.config:
+        with open(args.config) as f:
+            cfg_dict = yaml.safe_load(f) or {}
+
+    known = set(TrainConfig.__dataclass_fields__.keys())
+    filtered = {k: v for k, v in cfg_dict.items() if k in known}
+    cfg = TrainConfig(**filtered)
+
+    env = resolve_env(args)
+    if env:
+        cfg.env = env
+    if args.algorithm is not None:
+        cfg.algorithm = args.algorithm
+    if args.seed is not None:
+        cfg.seed = args.seed
+    if args.device is not None:
+        cfg.device = args.device
+    if args.max_timesteps is not None:
+        cfg.max_timesteps = args.max_timesteps
+    if args.eval_freq is not None:
+        cfg.eval_freq = args.eval_freq
+    if args.n_episodes is not None:
+        cfg.n_episodes = args.n_episodes
+    if args.out_dir is not None:
+        cfg.out_dir = args.out_dir
+    if args.no_campi:
+        cfg.use_campi = False
+    if args.n_max is not None:
+        cfg.n_max = args.n_max
+    if args.campi_period is not None:
+        cfg.campi_period = args.campi_period
+    if args.campi_start_step is not None:
+        cfg.campi_start_step = args.campi_start_step
+    if args.lambda_D is not None:
+        cfg.lambda_D = args.lambda_D
+    if args.lambda_T is not None:
+        cfg.lambda_T = args.lambda_T
+    if args.tau_pilot_initial is not None:
+        cfg.tau_pilot_initial = args.tau_pilot_initial
+        cfg.initial_tau = args.tau_pilot_initial
+    if args.target_action_mse is not None:
+        cfg.target_action_mse = args.target_action_mse
+    if args.batch_size is not None:
+        cfg.batch_size = args.batch_size
+    if args.beta_uncertainty is not None:
+        cfg.beta_uncertainty = args.beta_uncertainty
+    if args.max_action_mse is not None:
+        cfg.max_action_mse = args.max_action_mse
+    if args.replace_cert_margin is not None:
+        cfg.replace_cert_margin = args.replace_cert_margin
+
+    if cfg.algorithm == "iql" and "tau" not in cfg_dict:
+        cfg.tau = 0.001
+    if cfg.algorithm == "cql":
+        if "actor_lr" not in cfg_dict and "cql_policy_lr" not in cfg_dict:
+            cfg.cql_policy_lr = 3e-5
+        if "bc_coef" not in cfg_dict:
+            cfg.bc_coef = 0.1
+
+    return cfg
+
+
+def main():
+    os.environ.setdefault("D4RL_SUPPRESS_IMPORT_ERROR", "1")
+    os.environ.setdefault("MUJOCO_GL", "egl")
+    args = parse_args()
+    cfg = load_config(args)
+    trainer = CaPOTrainer(cfg)
+    trainer.train()
+
+
+if __name__ == "__main__":
+    main()

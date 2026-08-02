@@ -1,0 +1,32 @@
+# Training outputs and checkpoints
+results/
+*.pt
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets and local env
+.env
+.env.*
+
+# Experiment tracking
+.wandb/
+wandb/
+
+# OS
+.DS_Store
+
+# Queue / local ops
+queue.pid
+results/queue.pid
+
+# Large archives and documents
+*.tar.gz
+*.zip
+*.pdf
+
+# Editor
+.vscode/
+.idea/
