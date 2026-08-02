@@ -1,5 +1,6 @@
 # Training outputs and checkpoints
 results/
+results_smoke/
 *.pt
 
 # Python

@@ -81,6 +81,9 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
      - `capo` → `configs/defaults.yaml`, `run_tag=capo`, `use_capo=true`, `n_critics=4`
      - `baseline` → `configs/baseline_iql.yaml`, `run_tag=baseline`, `use_capo=false`, `n_critics=4`
    - 3 envs × 3 datasets × 2 variants = **18 cells** (sequential on one GPU)
+   - **choi** owns the **td3_bc** matrix (`scripts/run_matrix.sh`).
+   - **svcho** owns the matched **cql** matrix (`scripts/run_matrix_cql.sh`,
+     `baseline` → `configs/baseline_cql.yaml`).
 
 ## How to update (example)
 
