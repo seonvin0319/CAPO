@@ -80,7 +80,9 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
    - **offrl / IQL:** `scripts/run_matrix_iql.sh` (same schedule/hyperparams, `--algorithm iql`)
      - `capo` → `configs/defaults.yaml`, `run_tag=capo`, `use_capo=true`, `n_critics=4`
      - `baseline` → `configs/baseline_iql.yaml`, `run_tag=baseline`, `use_capo=false`, `n_critics=4`
-   - 3 envs × 3 datasets × 2 variants = **18 cells** (sequential on one GPU)
+     - then **v8_hold × 9** — `scripts/run_matrix_v8_hold_iql.sh` (`configs/v8_hold.yaml`,
+       `--algorithm iql`; waiter: `scripts/queue_v8_hold_iql_after_iql.sh`)
+   - 3 envs × 3 datasets × 2 variants = **18 cells** (sequential on one GPU), plus offrl v8_hold IQL × 9
    - **choi** owns the **td3_bc** matrix (`scripts/run_matrix.sh`).
    - **svcho** owns the matched **cql** matrix (`scripts/run_matrix_cql.sh`,
      `baseline` → `configs/baseline_cql.yaml`).
