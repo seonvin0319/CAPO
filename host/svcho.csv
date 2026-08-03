@@ -1,21 +1,25 @@
 variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finished,eta,notes,updated_at
-capo,cql,hopper,medium,0,done,configs/defaults.yaml,capo,results/cql/hopper-medium-v2/s0/0803_0103_capo_cql_hopper-medium-v2_s0,2026-08-03 01:03:47,2026-08-03 02:44:05,,margin=0.0,2026-08-03 08:52:00
-capo,cql,hopper,medium-expert,0,queued,configs/defaults.yaml,capo,,,,,~1.6h/cell,replaces expert,2026-08-03 08:52:00
-capo,cql,hopper,medium-replay,0,done,configs/defaults.yaml,capo,results/cql/hopper-medium-replay-v2/s0/0803_0427_capo_cql_hopper-medium-replay-v2_s0,2026-08-03 04:27:09,2026-08-03 06:01:17,,margin=0.0,2026-08-03 08:52:00
-capo,cql,halfcheetah,medium,0,done,configs/defaults.yaml,capo,results/cql/halfcheetah-medium-v2/s0/0803_0601_capo_cql_halfcheetah-medium-v2_s0,2026-08-03 06:01:17,2026-08-03 07:48:49,,margin=0.0,2026-08-03 08:52:00
-capo,cql,halfcheetah,expert,0,running,configs/defaults.yaml,capo,results/cql/halfcheetah-expert-v2/s0/0803_0748_capo_cql_halfcheetah-expert-v2_s0,2026-08-03 07:48:49,,~finish then cancel expert queue,let finish; superseded by medium-expert,2026-08-03 08:52:00
-capo,cql,halfcheetah,medium-expert,0,queued,configs/defaults.yaml,capo,,,,,~1.6h/cell,after live expert finishes,2026-08-03 08:52:00
-capo,cql,halfcheetah,medium-replay,0,queued,configs/defaults.yaml,capo,,,,,~1.6h/cell,replace_cert_margin=0.0,2026-08-03 08:52:00
-capo,cql,walker2d,medium,0,queued,configs/defaults.yaml,capo,,,,,~1.6h/cell,replace_cert_margin=0.0,2026-08-03 08:52:00
-capo,cql,walker2d,medium-expert,0,queued,configs/defaults.yaml,capo,,,,,~1.6h/cell,replaces expert,2026-08-03 08:52:00
-capo,cql,walker2d,medium-replay,0,queued,configs/defaults.yaml,capo,,,,,~1.6h/cell,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,hopper,medium,0,queued,configs/baseline_cql.yaml,baseline,,,,,after capo cells; use_capo=false,2026-08-03 08:52:00
-baseline,cql,hopper,medium-expert,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,hopper,medium-replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,halfcheetah,medium,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,halfcheetah,medium-expert,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,halfcheetah,medium-replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,walker2d,medium,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,walker2d,medium-expert,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-baseline,cql,walker2d,medium-replay,0,queued,configs/baseline_cql.yaml,baseline,,,,,replace_cert_margin=0.0,2026-08-03 08:52:00
-capo,cql,hopper,expert,0,cancelled,configs/defaults.yaml,capo,results/cql/hopper-expert-v2/s0/0803_0244_capo_cql_hopper-expert-v2_s0,2026-08-03 02:44:05,2026-08-03 04:27:09,,superseded by medium-expert (artifact kept),2026-08-03 08:52:00
+v8_hold,cql,hopper,medium,0,running,configs/v8_hold.yaml,v8_hold,results/cql/hopper-medium-v2/s0/0803_1018_v8_hold_cql_hopper-medium-v2_s0,2026-08-03 10:18:28,,~1.7h/cell; ~15h → ~2026-08-04 01:20,live; λ_D=0.2 λ_T=1.0 period=50k margin=0.0,2026-08-03 10:19:00
+v8_hold,cql,hopper,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,hopper,medium-replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,halfcheetah,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,halfcheetah,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,halfcheetah,medium-replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,walker2d,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,walker2d,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+v8_hold,cql,walker2d,medium-replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,~1.7h/cell,v8_hold CQL,2026-08-03 10:18:00
+capo,cql,hopper,medium,0,cancelled,configs/defaults.yaml,capo,results/cql/hopper-medium-v2/s0/0803_0103_capo_cql_hopper-medium-v2_s0,2026-08-03 01:03:47,2026-08-03 02:44:05,,superseded by v8_hold (artifact kept),2026-08-03 10:18:00
+capo,cql,hopper,medium-expert,0,cancelled,configs/defaults.yaml,capo,,,,,superseded by v8_hold,2026-08-03 10:18:00
+capo,cql,hopper,medium-replay,0,cancelled,configs/defaults.yaml,capo,results/cql/hopper-medium-replay-v2/s0/0803_0427_capo_cql_hopper-medium-replay-v2_s0,2026-08-03 04:27:09,2026-08-03 06:01:17,,superseded by v8_hold (artifact kept),2026-08-03 10:18:00
+capo,cql,halfcheetah,medium,0,cancelled,configs/defaults.yaml,capo,results/cql/halfcheetah-medium-v2/s0/0803_0601_capo_cql_halfcheetah-medium-v2_s0,2026-08-03 06:01:17,2026-08-03 07:48:49,,superseded by v8_hold (artifact kept),2026-08-03 10:18:00
+capo,cql,halfcheetah,expert,0,cancelled,configs/defaults.yaml,capo,results/cql/halfcheetah-expert-v2/s0/0803_0748_capo_cql_halfcheetah-expert-v2_s0,2026-08-03 07:48:49,2026-08-03 09:48:29,,superseded by v8_hold (artifact kept),2026-08-03 10:18:00
+capo,cql,hopper,expert,0,cancelled,configs/defaults.yaml,capo,results/cql/hopper-expert-v2/s0/0803_0244_capo_cql_hopper-expert-v2_s0,2026-08-03 02:44:05,2026-08-03 04:27:09,,superseded by v8_hold (artifact kept),2026-08-03 10:18:00
+baseline,cql,hopper,medium,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,hopper,medium-expert,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,hopper,medium-replay,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,halfcheetah,medium,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,halfcheetah,medium-expert,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,halfcheetah,medium-replay,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,walker2d,medium,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,walker2d,medium-expert,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
+baseline,cql,walker2d,medium-replay,0,cancelled,configs/baseline_cql.yaml,baseline,,,,,superseded by v8_hold,2026-08-03 10:18:00
