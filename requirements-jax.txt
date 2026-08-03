@@ -1,0 +1,8 @@
+-r requirements.txt
+
+# Install a CUDA-enabled jaxlib wheel appropriate for the host first when
+# training on GPU: https://docs.jax.dev/en/latest/installation.html
+jax>=0.4.30
+flax>=0.10
+optax>=0.2
+

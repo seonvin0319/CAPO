@@ -1,7 +1,9 @@
 # Training outputs and checkpoints
 results/
 results_smoke/
+results_jax/
 *.pt
+*.pkl
 
 # Python
 __pycache__/

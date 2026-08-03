@@ -32,6 +32,18 @@ pip install git+https://github.com/Farama-Foundation/D4RL.git
 
 `requirements.txt` pins `gym==0.23.0`, `numpy<2`, `pyyaml`, `tqdm`, `pyrallis`. **torch** and **d4rl** are expected but not always listed as pip wheels.
 
+For the JAX backend, install the CUDA-enabled JAX wheel matching the host first,
+then the remaining dependencies:
+
+```bash
+# See https://docs.jax.dev/en/latest/installation.html for the current CUDA wheel.
+pip install -r requirements-jax.txt
+python -c "import jax; print(jax.devices())"
+```
+
+For newer GPU architectures, use a current Python/JAX/CUDA toolchain rather
+than reusing an older environment merely because `jax.devices()` lists a GPU.
+
 Environment variables used by the scripts:
 
 ```bash
@@ -46,6 +58,8 @@ export MUJOCO_GL=egl   # or osmesa / glfw as appropriate
 | Path | Description |
 |------|-------------|
 | `capo/` | Core library: `core.py` (CAPO certificates), `trainer.py` (D4RL loop), `refiner.py`, `networks.py`, `buffer.py`, `tabular.py` |
+| `capo_jax/` | Flax/Optax backend with the same CAPO core and TD3+BC, IQL, CQL trainers |
+| `scripts/run_capo_jax.py` | JAX D4RL training CLI; accepts the same config and common overrides |
 | `configs/defaults.yaml` | Canonical 1M-step defaults (v8 teacher + replace gate) |
 | `configs/baseline_td3bc.yaml` | Matched TD3+BC control (`use_capo: false`, `n_critics: 4`) |
 | `configs/smoke.yaml` | Short hopper smoke run (~2k steps) |
@@ -88,6 +102,17 @@ python scripts/run_capo.py --config configs/defaults.yaml \
 python scripts/run_capo.py --config configs/smoke.yaml --algorithm td3_bc --env hopper-medium-v2
 ```
 
+JAX smoke or full run:
+
+```bash
+python scripts/run_capo_jax.py --config configs/smoke.yaml \
+  --algorithm cql --env hopper-medium-v2 --device cuda \
+  --out_dir results_jax
+
+# CPU correctness smoke (useful before checking the CUDA toolchain)
+JAX_PLATFORMS=cpu python scripts/run_capo_jax.py --config configs/smoke.yaml --device cpu
+```
+
 **choi pipeline** (capo×9 → v8_hold×9 → baseline×9, sequential):
 
 ```bash
@@ -128,6 +153,7 @@ Typical artifacts (not committed to git):
 
 - `train.log`, `config.json`, `metrics.jsonl`, `summary.json`
 - `capo_refresh.jsonl`, `capo_ladder.jsonl` (CAPO diagnostics)
+- JAX runs use the corresponding `best.pkl`, `final.pkl`, and `checkpoint_<steps>.pkl`
 - `best.pt`, `final.pt`, `checkpoint_<steps>.pt`
 
 Matrix queue tracking (local only):
@@ -179,8 +205,10 @@ See `capo/core.py` and `capo/trainer.py` module docstrings for design constraint
 ```bash
 cd /path/to/CAPO
 pytest tests/test_pilot_adaptive.py -q
+pytest tests/test_jax_port.py -q
 # or
-python -m pytest tests/test_pilot_adaptive.py
+python tests/test_pilot_adaptive.py
+JAX_PLATFORMS=cpu python tests/test_jax_port.py
 ```
 
 ---
