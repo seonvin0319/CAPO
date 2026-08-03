@@ -108,6 +108,9 @@ for spec in "${VARIANTS[@]}"; do
       if [[ $rc -eq 0 ]]; then
         mark "$variant" "$envb" "$ds" "done" "$run_dir" "$started" "$finished"
         echo "[ok] $variant $envb $ds → $run_dir"
+        if [[ -n "$run_dir" && "$run_dir" != "unknown" && -d "$run_dir" ]]; then
+          "$PYTHON" scripts/plot_training_curve.py "$run_dir" || true
+        fi
       else
         mark "$variant" "$envb" "$ds" "failed" "$run_dir" "$started" "$finished"
         echo "[fail] $variant $envb $ds rc=$rc (see $run_dir/train.log)"

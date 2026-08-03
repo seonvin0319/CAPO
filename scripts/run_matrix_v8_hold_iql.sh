@@ -100,6 +100,9 @@ for envb in "${ENVS[@]}"; do
     if [[ $rc -eq 0 ]]; then
       mark "$envb" "$ds" "done" "$run_dir" "$started" "$finished"
       echo "[ok] $VARIANT $envb $ds → $run_dir"
+      if [[ -n "$run_dir" && "$run_dir" != "unknown" && -d "$run_dir" ]]; then
+        "$PYTHON" scripts/plot_training_curve.py "$run_dir" || true
+      fi
     else
       mark "$envb" "$ds" "failed" "$run_dir" "$started" "$finished"
       echo "[fail] $VARIANT $envb $ds rc=$rc"
