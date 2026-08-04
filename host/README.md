@@ -92,7 +92,9 @@ Do not mark `done` from a checkpoint alone if the run did not finish cleanly.
      (`scripts/queue_choi_pipeline.sh`; status `queue_status.tsv` /
      `queue_status_baseline.tsv`)
    - **ext_csh:** v8 hold × 9 — `configs/v8_hold.yaml` /
-     `scripts/run_matrix_v8_hold.sh` (`λ_D=0.2`, `λ_T=1.0`,
+     `scripts/run_matrix_v8_hold_parallel.sh` (or sequential
+     `run_matrix_v8_hold.sh`): datasets
+     `medium` / `medium-expert` / `replay` (`λ_D=0.2`, `λ_T=1.0`,
      `capo_period=50000`, `margin=0.0`, …). Board: `host/ext_csh.csv`.
    - choi must not launch v8_hold while ext_csh owns it.
 

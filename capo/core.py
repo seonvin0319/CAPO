@@ -45,7 +45,6 @@ class CAPOConfig:
     data_penalty_coef: float = 1.0
     actor_opt_error: float = 0.0
     accept_margin: float = 0.0
-    tau_candidates: Tuple[float, ...] = (1e-3, 3e-3, 5e-3, 1e-2)
     tau_max: float = 1e-2
     tau_min: float = 1e-3
     max_action_mse: Optional[float] = 0.01
@@ -53,8 +52,6 @@ class CAPOConfig:
     q_scale_eps: float = 1e-6
     reference_eps: float = 1e-6
     # Tau selection:
-    #   full_grid | movement_warm_start (legacy) | pilot_adaptive (default)
-    tau_controller: str = "pilot_adaptive"
     target_action_mse: float = 0.0025
     initial_tau: float = 0.01
     tau_pilot_initial: float = 0.01
@@ -104,12 +101,6 @@ def _as_numpy(x: Tensor | np.ndarray | float) -> float:
         return float(x.detach().float().mean().cpu().item())
     return float(x)
 
-
-def _filter_taus(cfg: CAPOConfig) -> Tuple[float, ...]:
-    taus = tuple(float(t) for t in cfg.tau_candidates if float(t) <= float(cfg.tau_max) + 1e-12)
-    if not taus:
-        taus = (min(cfg.tau_candidates),)
-    return taus
 
 
 def clip_tau(tau: float, tau_min: float, tau_max: float) -> float:
@@ -257,22 +248,6 @@ def update_reference_ladder(ladder_value: float, accepted_certificate: float) ->
     return ladder_value + max(0.0, accepted_certificate)
 
 
-def propose_tau(
-    prev_tau: float,
-    prev_action_mse: float,
-    target_action_mse: float,
-    tau_grid: Sequence[float],
-) -> float:
-    """Legacy warm-start τ: scale previous τ by sqrt(δ / D), project onto log-grid."""
-    grid = [float(t) for t in tau_grid]
-    if not grid:
-        raise ValueError("empty tau_grid")
-    raw = float(prev_tau) * (
-        float(target_action_mse) / max(float(prev_action_mse), 1e-8)
-    ) ** 0.5
-    raw = max(raw, 1e-12)
-    return min(grid, key=lambda t: abs(math.log(t) - math.log(raw)))
-
 
 def _ensure_controller_state(
     tau_controller_state: Optional[List[dict]],
@@ -285,7 +260,6 @@ def _ensure_controller_state(
         tau_controller_state.append(
             {
                 "previous_selected_tau": None,
-                # legacy warm-start fields
                 "tau": float(cfg.tau_pilot_initial),
                 "action_mse": float(cfg.target_action_mse),
             }
@@ -464,13 +438,9 @@ def calibrated_adaptive_mpi(
     if cert_critics is None:
         cert_critics = critics if critics is not None else gen_critics
 
-    controller = str(getattr(cfg, "tau_controller", "pilot_adaptive")).lower()
-    taus = _filter_taus(cfg)
     assert cfg.n_max >= 0
     assert len(gen_critics) > 0
     assert len(cert_critics) > 0
-    if controller in ("full_grid", "movement_warm_start"):
-        assert len(taus) > 0
 
     if q_scale is None:
         q_scale = estimate_q_scale(
@@ -489,80 +459,23 @@ def calibrated_adaptive_mpi(
     ladder_value = float(initial_ladder_value)
     current = base_policy.copy()
     any_accepted = False
-    warm = controller == "movement_warm_start"
-    pilot = controller == "pilot_adaptive"
 
     tau_controller_state = _ensure_controller_state(tau_controller_state, cfg.n_max, cfg)
 
     for n in range(cfg.n_max):
-        if pilot:
-            best_policy, best_stats, cand_stats, diag, accepted = _pilot_adaptive_step(
-                n=n,
-                current=current,
-                refiner=refiner,
-                gen_critics=gen_critics,
-                cert_critics=cert_critics,
-                states=states,
-                cfg=cfg,
-                q_scale=float(q_scale),
-                data_actions=data_actions,
-                controller_n=tau_controller_state[n],
-            )
-            candidates_for_record = cand_stats
-        elif warm:
-            candidates: List[Tuple[Policy, CandidateStats]] = []
-            tau = propose_tau(
-                prev_tau=float(tau_controller_state[n]["tau"]),
-                prev_action_mse=float(tau_controller_state[n]["action_mse"]),
-                target_action_mse=float(cfg.target_action_mse),
-                tau_grid=taus,
-            )
-            candidate, stats = _refine_and_certify(
-                refiner=refiner,
-                gen_critics=gen_critics,
-                cert_critics=cert_critics,
-                center=current,
-                states=states,
-                tau=float(tau),
-                cfg=cfg,
-                q_scale=float(q_scale),
-                data_actions=data_actions,
-            )
-            candidates.append((candidate, stats))
-            tau_controller_state[n]["tau"] = float(tau)
-            tau_controller_state[n]["action_mse"] = float(stats.action_mse)
-            best_policy, best_stats = candidate, stats
-            move_ok = True
-            if cfg.max_action_mse is not None and stats.action_mse > float(cfg.max_action_mse):
-                move_ok = False
-            accepted = bool(best_stats.certificate > cfg.accept_margin) and move_ok
-            candidates_for_record = [s for _, s in candidates]
-            diag = {}
-            if not accepted:
-                best_policy = None
-        else:
-            candidates = []
-            for tau in taus:
-                candidate, stats = _refine_and_certify(
-                    refiner=refiner,
-                    gen_critics=gen_critics,
-                    cert_critics=cert_critics,
-                    center=current,
-                    states=states,
-                    tau=float(tau),
-                    cfg=cfg,
-                    q_scale=float(q_scale),
-                    data_actions=data_actions,
-                )
-                candidates.append((candidate, stats))
-
-            best_idx = int(np.argmax([s.certificate for _, s in candidates]))
-            best_policy, best_stats = candidates[best_idx]
-            accepted = bool(best_stats.certificate > cfg.accept_margin)
-            candidates_for_record = [s for _, s in candidates]
-            diag = {}
-            if not accepted:
-                best_policy = None
+        best_policy, best_stats, cand_stats, diag, accepted = _pilot_adaptive_step(
+            n=n,
+            current=current,
+            refiner=refiner,
+            gen_critics=gen_critics,
+            cert_critics=cert_critics,
+            states=states,
+            cfg=cfg,
+            q_scale=float(q_scale),
+            data_actions=data_actions,
+            controller_n=tau_controller_state[n],
+        )
+        candidates_for_record = cand_stats
 
         if not accepted:
             records.append(

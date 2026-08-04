@@ -1,12 +1,12 @@
 variant,algo,env_base,dataset,seed,status,config,run_tag,run_dir,started,finished,eta,notes,updated_at
-v8_hold,td3_bc,hopper,medium,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-medium-v2/s0/0802_2346_v8_hold_td3_bc_hopper-medium-v2_s0,2026-08-02 23:46:41,,,parallel 3/gpu×2,2026-08-03 00:50:00
-v8_hold,td3_bc,hopper,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,paper cell; launch when slot free,2026-08-03 00:50:00
-v8_hold,td3_bc,hopper,medium-replay,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-medium-replay-v2/s0/0803_0035_v8_hold_td3_bc_hopper-medium-replay-v2_s0,2026-08-03 00:35:40,,,parallel gpu0; dataset label medium-replay,2026-08-03 01:12:00
-v8_hold,td3_bc,halfcheetah,medium,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/halfcheetah-medium-v2/s0/0803_0036_v8_hold_td3_bc_halfcheetah-medium-v2_s0,2026-08-03 00:35:40,,,parallel gpu1,2026-08-03 00:50:00
-v8_hold,td3_bc,halfcheetah,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,paper cell; launch when slot free,2026-08-03 00:50:00
-v8_hold,td3_bc,halfcheetah,medium-replay,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/halfcheetah-medium-replay-v2/s0/0803_0035_v8_hold_td3_bc_halfcheetah-medium-replay-v2_s0,2026-08-03 00:35:40,,,parallel gpu1; dataset label medium-replay,2026-08-03 01:12:00
-v8_hold,td3_bc,walker2d,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,behind parallel pool,2026-08-03 00:50:00
-v8_hold,td3_bc,walker2d,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,paper cell (was expert),2026-08-03 00:50:00
-v8_hold,td3_bc,walker2d,medium-replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,behind parallel pool,2026-08-03 00:50:00
-v8_hold,td3_bc,hopper,expert,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-expert-v2/s0/0803_0036_v8_hold_td3_bc_hopper-expert-v2_s0,2026-08-03 00:35:40,,,leftover expert (keep); not paper,2026-08-03 00:50:00
-v8_hold,td3_bc,halfcheetah,expert,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/halfcheetah-expert-v2/s0/0803_0036_v8_hold_td3_bc_halfcheetah-expert-v2_s0,2026-08-03 00:35:40,,,leftover expert (keep); not paper,2026-08-03 00:50:00
+v8_hold,td3_bc,hopper,medium,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-medium-v2/s0/0802_2346_v8_hold_td3_bc_hopper-medium-v2_s0,2026-08-02 23:46:41,,,parallel 3/gpu×2,2026-08-03 01:36:00
+v8_hold,td3_bc,hopper,medium-expert,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-medium-expert-v2/s0/0803_0136_v8_hold_td3_bc_hopper-medium-expert-v2_s0,2026-08-03 01:36:00,,,launched after stopping collapsed hopper-expert,2026-08-03 01:36:00
+v8_hold,td3_bc,hopper,medium-replay,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-medium-replay-v2/s0/0803_0035_v8_hold_td3_bc_hopper-medium-replay-v2_s0,2026-08-03 00:35:40,,,live --dataset replay,2026-08-03 01:36:00
+v8_hold,td3_bc,halfcheetah,medium,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/halfcheetah-medium-v2/s0/0803_0036_v8_hold_td3_bc_halfcheetah-medium-v2_s0,2026-08-03 00:35:40,,,parallel,2026-08-03 01:36:00
+v8_hold,td3_bc,halfcheetah,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,paper cell; launch when slot free,2026-08-03 01:36:00
+v8_hold,td3_bc,halfcheetah,medium-replay,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/halfcheetah-medium-replay-v2/s0/0803_0035_v8_hold_td3_bc_halfcheetah-medium-replay-v2_s0,2026-08-03 00:35:40,,,live --dataset replay,2026-08-03 01:36:00
+v8_hold,td3_bc,walker2d,medium,0,queued,configs/v8_hold.yaml,v8_hold,,,,,behind parallel pool,2026-08-03 01:36:00
+v8_hold,td3_bc,walker2d,medium-expert,0,queued,configs/v8_hold.yaml,v8_hold,,,,,paper cell,2026-08-03 01:36:00
+v8_hold,td3_bc,walker2d,medium-replay,0,queued,configs/v8_hold.yaml,v8_hold,,,,,behind parallel pool,2026-08-03 01:36:00
+v8_hold,td3_bc,hopper,expert,0,cancelled,configs/v8_hold.yaml,v8_hold,results/td3_bc/hopper-expert-v2/s0/0803_0036_v8_hold_td3_bc_hopper-expert-v2_s0,2026-08-03 00:35:40,2026-08-03 01:35:00,,stopped: 150k replace_new offline-cert vs online pairedΔJ=-110 collapse,2026-08-03 01:36:00
+v8_hold,td3_bc,halfcheetah,expert,0,running,configs/v8_hold.yaml,v8_hold,results/td3_bc/halfcheetah-expert-v2/s0/0803_0036_v8_hold_td3_bc_halfcheetah-expert-v2_s0,2026-08-03 00:35:40,,,leftover expert (keep for now),2026-08-03 01:36:00

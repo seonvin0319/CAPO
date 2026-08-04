@@ -68,7 +68,6 @@ def test_tau0_first_refresh_is_pilot_initial():
     refiner = ScriptedRefiner()
     cfg = CAPOConfig(
         n_max=1,
-        tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
         tau_min=0.001,
         tau_max=0.05,
@@ -108,7 +107,6 @@ def test_at_most_two_candidates_and_duplicate_skip():
     refiner = ScriptedRefiner()
     cfg = CAPOConfig(
         n_max=1,
-        tau_controller="pilot_adaptive",
         tau_pilot_initial=0.05,
         tau_min=0.001,
         tau_max=0.05,
@@ -136,7 +134,6 @@ def test_at_most_two_candidates_and_duplicate_skip():
     refiner2 = ScriptedRefiner()
     cfg2 = CAPOConfig(
         n_max=1,
-        tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
         tau_min=0.001,
         tau_max=0.05,
@@ -182,7 +179,6 @@ def test_n_star_one_and_prev_tau_update_only_on_accept():
     refiner = TwoStepRefiner()
     cfg = CAPOConfig(
         n_max=2,
-        tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
         tau_min=0.001,
         tau_max=0.05,

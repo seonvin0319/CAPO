@@ -2,7 +2,8 @@
 
 # Install a CUDA-enabled jaxlib wheel appropriate for the host first when
 # training on GPU: https://docs.jax.dev/en/latest/installation.html
-jax>=0.4.30
-flax>=0.10
-optax>=0.2
+jax==0.4.38
+flax==0.10.4
+optax==0.2.4
+pytest==8.3.5
 

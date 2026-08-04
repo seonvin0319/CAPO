@@ -18,7 +18,6 @@ n_max: 2
 beta_uncertainty: 1.0
 shift_penalty_coef: 0.25
 data_penalty_coef: 0.5
-tau_candidates: [0.001, 0.003, 0.005, 0.01, 0.02, 0.05]
 tau_min: 0.001
 tau_max: 0.05
 max_action_mse: 0.15
@@ -26,7 +25,6 @@ normalize_delta_q: true
 split_critics_for_certification: true
 refine_steps: 2
 
-tau_controller: pilot_adaptive
 target_action_mse: 0.0025
 tau_pilot_initial: 0.01
 tau_duplicate_log_tolerance: 1.0e-6

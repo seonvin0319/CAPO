@@ -61,6 +61,15 @@ def parse_args():
     p.add_argument("--beta_uncertainty", type=float, default=None)
     p.add_argument("--max_action_mse", type=float, default=None)
     p.add_argument("--replace_cert_margin", type=float, default=None)
+    p.add_argument(
+        "--stale_incumbent_action",
+        type=str,
+        default=None,
+        choices=["replace_new", "keep_old", "disable_teacher"],
+        help="Action when C^{S→N}>margin and C^{S→O}≤margin",
+    )
+    p.add_argument("--resume_run_dir", type=str, default=None,
+                   help="Resume training in an existing run directory")
     return p.parse_args()
 
 
@@ -131,6 +140,10 @@ def load_config(args) -> TrainConfig:
         cfg.max_action_mse = args.max_action_mse
     if args.replace_cert_margin is not None:
         cfg.replace_cert_margin = args.replace_cert_margin
+    if args.stale_incumbent_action is not None:
+        cfg.stale_incumbent_action = args.stale_incumbent_action
+    if args.resume_run_dir is not None:
+        cfg.resume_run_dir = args.resume_run_dir
 
     if cfg.algorithm == "iql" and "tau" not in cfg_dict:
         cfg.tau = 0.001

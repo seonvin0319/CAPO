@@ -17,7 +17,6 @@ use_capo: true
 n_max: 2
 beta_uncertainty: 1.0
 shift_penalty_coef: 0.1
-tau_candidates: [0.005, 0.01]
 refine_steps: 3
 capo_period: 1000
 capo_start_step: 500

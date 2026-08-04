@@ -2,6 +2,7 @@
 results/
 results_smoke/
 results_jax/
+results_jax_sweeps/
 *.pt
 *.pkl
 

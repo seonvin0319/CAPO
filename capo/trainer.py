@@ -14,7 +14,7 @@ from __future__ import annotations
 import copy
 import json
 import math
-import os
+import signal
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -44,6 +44,21 @@ from .networks import Actor, CriticEnsemble, ValueFunction
 from .refiner import ProximalW2Refiner
 
 EXP_ADV_MAX = 100.0
+
+_STOP_REQUESTED = False
+_STOP_SIGNAL = None
+
+
+def _request_stop(signum, _frame):
+    global _STOP_REQUESTED, _STOP_SIGNAL
+    _STOP_REQUESTED = True
+    _STOP_SIGNAL = signum
+    try:
+        name = signal.Signals(signum).name
+    except (ValueError, AttributeError):
+        name = str(signum)
+    print(f"[signal] received {name} — will emergency-save after current step", flush=True)
+
 
 
 class _Tee:
@@ -120,7 +135,6 @@ class TrainConfig:
     shift_penalty_coef: float = 0.25
     data_penalty_coef: float = 0.5
     accept_margin: float = 0.0
-    tau_candidates: Tuple[float, ...] = (1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2)
     tau_max: float = 5e-2
     tau_min: float = 1e-3
     max_action_mse: Optional[float] = 0.15
@@ -130,8 +144,6 @@ class TrainConfig:
     refine_lr: float = 3e-4
     capo_eval_batch: int = 512
     q_scale_ema: float = 0.99
-    # Tau controller: pilot_adaptive (default) | full_grid | movement_warm_start
-    tau_controller: str = "pilot_adaptive"
     target_action_mse: float = 0.0025
     initial_tau: float = 0.01
     tau_pilot_initial: float = 0.01
@@ -146,6 +158,9 @@ class TrainConfig:
     # Incumbent–challenger replacement (same-time, same-critic pairwise cert).
     use_replace_gate: bool = True
     replace_cert_margin: float = 0.0  # require C^{O→N} > margin (0.0 matches v8 hold)
+    # When C^{S→N}>margin and C^{S→O}≤margin (incumbent looks stale vs student):
+    #   replace_new | keep_old | disable_teacher
+    stale_incumbent_action: str = "replace_new"
 
     eval_base_actor: bool = True  # legacy name; evaluates student θL
     eval_teacher_actor: bool = True
@@ -158,18 +173,19 @@ class TrainConfig:
     # Optional tag in run folder name, e.g. "capo" / "baseline"
     run_tag: str = ""
     save_best: bool = True
+    # Periodic full training ckpt (weights+opts+CAPO state). 0 disables.
+    save_ckpt_freq: int = 50_000
+    # Resume from an existing run dir (loads latest.pt / newest checkpoint_*.pt).
+    resume_run_dir: str = ""
     log_interval: int = 1000
     use_wandb: bool = False
     project: str = "CAPO"
     group: str = "d4rl"
 
     def __post_init__(self):
-        if isinstance(self.tau_candidates, list):
-            self.tau_candidates = tuple(float(x) for x in self.tau_candidates)
         self.algorithm = self.algorithm.lower().replace("-", "_").replace("+", "")
         if self.algorithm in ("td3bc", "td3"):
             self.algorithm = "td3_bc"
-        self.tau_controller = "pilot_adaptive"
 
 
 def set_seed(seed: int):
@@ -394,12 +410,10 @@ class CAPOTrainer:
             shift_penalty_coef=cfg.shift_penalty_coef,
             data_penalty_coef=cfg.data_penalty_coef,
             accept_margin=cfg.accept_margin,
-            tau_candidates=tuple(cfg.tau_candidates),
             tau_max=cfg.tau_max,
             tau_min=cfg.tau_min,
             max_action_mse=cfg.max_action_mse,
             normalize_delta_q=cfg.normalize_delta_q,
-            tau_controller=cfg.tau_controller,
             target_action_mse=cfg.target_action_mse,
             initial_tau=cfg.initial_tau,
             tau_pilot_initial=cfg.tau_pilot_initial,
@@ -420,31 +434,40 @@ class CAPOTrainer:
         self.actor_updates = 0
         self.best_score = -1e9
         self.best_base_score = -1e9
-        stamp = time.strftime("%m%d_%H%M")
-        tag = (cfg.run_tag or "").strip().replace(" ", "_")
-        mid = f"{tag}_{cfg.algorithm}" if tag else cfg.algorithm
-        run_name = f"{stamp}_{mid}_{cfg.env}_s{cfg.seed}"
-        # Canonical: results/<algo>/<env_id>/s<seed>/<run>/
-        self.run_dir = (
-            Path(cfg.out_dir) / cfg.algorithm / cfg.env / f"s{cfg.seed}" / run_name
-        )
+        self._start_step = 1
+        if (cfg.resume_run_dir or "").strip():
+            self.run_dir = Path(cfg.resume_run_dir).expanduser().resolve()
+            if not self.run_dir.is_dir():
+                raise FileNotFoundError(f"resume_run_dir not found: {self.run_dir}")
+            log_mode = "a"
+        else:
+            stamp = time.strftime("%m%d_%H%M")
+            tag = (cfg.run_tag or "").strip().replace(" ", "_")
+            mid = f"{tag}_{cfg.algorithm}" if tag else cfg.algorithm
+            run_name = f"{stamp}_{mid}_{cfg.env}_s{cfg.seed}"
+            # results/<algo>/<env_id>/s<seed>/<run>/
+            self.run_dir = (
+                Path(cfg.out_dir) / cfg.algorithm / cfg.env / f"s{cfg.seed}" / run_name
+            )
+            log_mode = "w"
         self.run_dir.mkdir(parents=True, exist_ok=True)
-        # Legacy symlink results/<env_id>/s<seed>/<run> → canonical.
-        # Keeps in-flight matrix scripts (old latest_run_dir) from missing the path.
-        legacy_parent = Path(cfg.out_dir) / cfg.env / f"s{cfg.seed}"
-        legacy_link = legacy_parent / run_name
-        if not legacy_link.exists() and not legacy_link.is_symlink():
-            legacy_parent.mkdir(parents=True, exist_ok=True)
-            rel = os.path.relpath(self.run_dir, legacy_parent)
-            try:
-                legacy_link.symlink_to(rel)
-            except OSError:
-                pass
         with open(self.run_dir / "config.json", "w") as f:
             json.dump(asdict(cfg), f, indent=2)
-        self._log_fp = open(self.run_dir / "train.log", "w", buffering=1)
+        self._log_fp = open(self.run_dir / "train.log", log_mode, buffering=1)
         sys.stdout = _Tee(sys.stdout, self._log_fp)
         sys.stderr = _Tee(sys.stderr, self._log_fp)
+        if (cfg.resume_run_dir or "").strip():
+            loaded = self._load_training_ckpt()
+            if loaded is None:
+                raise FileNotFoundError(
+                    f"no latest.pt / checkpoint_*.pt / best.pt under {self.run_dir}"
+                )
+            print(
+                f"[resume] loaded step={self.total_it} from {loaded.name}",
+                flush=True,
+            )
+            self._start_step = int(self.total_it) + 1
+            self._trim_jsonl_after_resume()
         raw_env.close()
 
     def _soft_update(self, net, target):
@@ -893,7 +916,12 @@ class CAPOTrainer:
             elif c_so > margin:
                 decision = "keep_old"
             elif c_sn > margin and c_so <= margin:
-                decision = "replace_new"  # stale incumbent
+                stale_act = str(getattr(cfg, "stale_incumbent_action", "replace_new"))
+                if stale_act not in ("replace_new", "keep_old", "disable_teacher"):
+                    raise ValueError(
+                        f"stale_incumbent_action must be replace_new|keep_old|disable_teacher, got {stale_act!r}"
+                    )
+                decision = stale_act  # stale incumbent
             else:
                 decision = "disable_teacher"
 
@@ -913,6 +941,9 @@ class CAPOTrainer:
             "q_scale": float(self.q_scale),
             "use_replace_gate": bool(cfg.use_replace_gate),
             "replace_cert_margin": margin,
+            "stale_incumbent_action": str(
+                getattr(cfg, "stale_incumbent_action", "replace_new")
+            ),
             "movement": float(result.movements[-1]) if result.movements else None,
         }
         if has_new and pi_new is not None:
@@ -1008,6 +1039,153 @@ class CAPOTrainer:
             flush=True,
         )
 
+    def _training_payload(self, step: int, score: float, *, reason: str) -> dict:
+        return {
+            "actor": self.actor.state_dict(),
+            "actor_target": self.actor_target.state_dict(),
+            "refine_actor": self.refine_actor.state_dict(),
+            "deploy_actor": self.deploy_actor.state_dict(),
+            "critics": self.critics.state_dict(),
+            "critics_target": self.critics_target.state_dict(),
+            "vf": None if self.vf is None else self.vf.state_dict(),
+            "actor_opt": self.actor_opt.state_dict(),
+            "critic_opt": self.critic_opt.state_dict(),
+            "vf_opt": None if self.vf_opt is None else self.vf_opt.state_dict(),
+            "actor_lr_schedule": (
+                None if self.actor_lr_schedule is None else self.actor_lr_schedule.state_dict()
+            ),
+            "has_teacher": self.has_teacher,
+            "teacher_n": self.teacher_n,
+            "total_it": int(self.total_it),
+            "actor_updates": int(self.actor_updates),
+            "last_capo_step": int(self.last_capo_step),
+            "tau_controller_state": self.tau_controller_state,
+            "q_scale": float(self.q_scale),
+            "best_score": float(self.best_score),
+            "best_base_score": float(self.best_base_score),
+            "step": int(step),
+            "score": float(score),
+            "config": asdict(self.cfg),
+            "reason": reason,
+        }
+
+    def _save_training_ckpt(self, step: int, score: float, *, reason: str) -> Path:
+        """Persist every module final/best need, plus opts for resume."""
+        payload = self._training_payload(step, score, reason=reason)
+        ckpt_path = self.run_dir / f"checkpoint_{int(step)}.pt"
+        latest_path = self.run_dir / "latest.pt"
+        torch.save(payload, ckpt_path)
+        torch.save(payload, latest_path)
+        print(
+            f"[ckpt] {reason} step={int(step)} → {ckpt_path.name}, latest.pt",
+            flush=True,
+        )
+        return ckpt_path
+
+    def _find_resume_ckpt(self) -> Optional[Path]:
+        """Prefer latest.pt, else newest checkpoint_*.pt, else best.pt."""
+        cands: List[Path] = []
+        latest = self.run_dir / "latest.pt"
+        if latest.is_file():
+            return latest
+        cands.extend(self.run_dir.glob("checkpoint_*.pt"))
+        # Exclude final-only 1M ckpt that is just weights without train state if
+        # a best.pt is newer — still prefer any checkpoint_* by mtime first.
+        if cands:
+            return sorted(cands, key=lambda p: p.stat().st_mtime)[-1]
+        best = self.run_dir / "best.pt"
+        if best.is_file():
+            return best
+        return None
+
+    def _load_training_ckpt(self) -> Optional[Path]:
+        path = self._find_resume_ckpt()
+        if path is None:
+            return None
+        payload = torch.load(path, map_location=self.device, weights_only=False)
+        self.actor.load_state_dict(payload["actor"])
+        if "actor_target" in payload:
+            self.actor_target.load_state_dict(payload["actor_target"])
+        else:
+            self.actor_target.load_state_dict(payload["actor"])
+        self.refine_actor.load_state_dict(payload["refine_actor"])
+        if "deploy_actor" in payload and payload["deploy_actor"] is not None:
+            self.deploy_actor.load_state_dict(payload["deploy_actor"])
+        self.critics.load_state_dict(payload["critics"])
+        if "critics_target" in payload:
+            self.critics_target.load_state_dict(payload["critics_target"])
+        else:
+            self.critics_target.load_state_dict(payload["critics"])
+        if self.vf is not None and payload.get("vf") is not None:
+            self.vf.load_state_dict(payload["vf"])
+        if payload.get("actor_opt") is not None:
+            self.actor_opt.load_state_dict(payload["actor_opt"])
+        if payload.get("critic_opt") is not None:
+            self.critic_opt.load_state_dict(payload["critic_opt"])
+        if self.vf_opt is not None and payload.get("vf_opt") is not None:
+            self.vf_opt.load_state_dict(payload["vf_opt"])
+        if self.actor_lr_schedule is not None and payload.get("actor_lr_schedule") is not None:
+            self.actor_lr_schedule.load_state_dict(payload["actor_lr_schedule"])
+        self.has_teacher = bool(payload.get("has_teacher", False))
+        self.teacher_n = int(payload.get("teacher_n", 0))
+        self.total_it = int(payload.get("total_it", payload.get("step", 0)))
+        self.actor_updates = int(payload.get("actor_updates", 0))
+        self.last_capo_step = int(payload.get("last_capo_step", -10**9))
+        if payload.get("tau_controller_state") is not None:
+            self.tau_controller_state = payload["tau_controller_state"]
+        self.q_scale = float(payload.get("q_scale", 1.0))
+        if "best_score" in payload:
+            self.best_score = float(payload["best_score"])
+        elif payload.get("score") is not None:
+            self.best_score = float(payload["score"])
+        if "best_base_score" in payload:
+            self.best_base_score = float(payload["best_base_score"])
+        elif payload.get("score") is not None:
+            self.best_base_score = max(self.best_base_score, float(payload["score"]))
+        if path.name == "best.pt":
+            print(
+                f"[resume] best.pt only (step={self.total_it}): "
+                "opts/targets re-init; tau controller uses defaults",
+                flush=True,
+            )
+        return path
+
+    def _trim_jsonl_after_resume(self) -> None:
+        """Drop jsonl rows after resume step so curves stay monotonic."""
+        step = int(self.total_it)
+        for name in ("metrics.jsonl", "capo_ladder.jsonl", "capo_refresh.jsonl"):
+            jpath = self.run_dir / name
+            if not jpath.is_file():
+                continue
+            kept = []
+            with open(jpath) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except Exception:
+                        kept.append(line)
+                        continue
+                    row_step = row.get("step", row.get("refresh_step"))
+                    if row_step is None or int(row_step) <= step:
+                        kept.append(line)
+            with open(jpath, "w") as f:
+                for line in kept:
+                    f.write(line)
+                    f.write("\n")
+            print(
+                f"[resume] trimmed {name} to step<={step} ({len(kept)} rows)",
+                flush=True,
+            )
+
+    def _on_ckpt_schedule(self, step: int) -> bool:
+        freq = int(self.cfg.save_ckpt_freq or 0)
+        if freq <= 0:
+            return False
+        return step % freq == 0 or step == int(self.cfg.max_timesteps)
+
     def train_step(self) -> Dict[str, float]:
         self.total_it += 1
         batch = self.buffer.sample(self.cfg.batch_size)
@@ -1018,10 +1196,15 @@ class CAPOTrainer:
         return self._update_cql(*batch)
 
     def train(self) -> Dict[str, float]:
+        global _STOP_REQUESTED
         cfg = self.cfg
         metrics_path = self.run_dir / "metrics.jsonl"
         t0 = time.time()
         last_eval: Dict[str, float] = {}
+        interrupted = False
+
+        signal.signal(signal.SIGTERM, _request_stop)
+        signal.signal(signal.SIGINT, _request_stop)
 
         print(
             f"[CAPO] algo={cfg.algorithm} env={cfg.env} device={self.device} "
@@ -1029,13 +1212,18 @@ class CAPOTrainer:
             f"start={cfg.capo_start_step} λ_D={cfg.lambda_D} λ_T={cfg.lambda_T} "
             f"bc_reduction={cfg.bc_reduction} "
             f"replace_gate={cfg.use_replace_gate} margin={cfg.replace_cert_margin} "
-            f"tau_ctrl={cfg.tau_controller} δ={cfg.target_action_mse} "
+            f"stale_action={cfg.stale_incumbent_action} "
+            f"tau_ctrl=pilot_adaptive δ={cfg.target_action_mse} "
             f"tau_pilot0={cfg.tau_pilot_initial}",
             flush=True,
         )
-        print(f"[CAPO] run_dir={self.run_dir}", flush=True)
+        print(
+            f"[CAPO] run_dir={self.run_dir} "
+            f"save_ckpt_freq={cfg.save_ckpt_freq} start_step={self._start_step}",
+            flush=True,
+        )
 
-        for t in range(1, cfg.max_timesteps + 1):
+        for t in range(self._start_step, cfg.max_timesteps + 1):
             logs = self.train_step()
             if t % cfg.log_interval == 0:
                 elapsed = time.time() - t0
@@ -1128,6 +1316,56 @@ class CAPOTrainer:
                         self.run_dir / "best.pt",
                     )
 
+            if self._on_ckpt_schedule(t):
+                score_ckpt = float(
+                    last_eval.get(
+                        "student_d4rl_score",
+                        last_eval.get("d4rl_score", last_eval.get("return_mean", float("nan"))),
+                    )
+                    if last_eval
+                    else float("nan")
+                )
+                self._save_training_ckpt(t, score_ckpt, reason="schedule")
+
+            if _STOP_REQUESTED:
+                on_schedule = self._on_ckpt_schedule(t)
+                score_ckpt = float(
+                    last_eval.get(
+                        "student_d4rl_score",
+                        last_eval.get("d4rl_score", last_eval.get("return_mean", float("nan"))),
+                    )
+                    if last_eval
+                    else float("nan")
+                )
+                if not on_schedule:
+                    print(f"[signal] emergency save at step={t}", flush=True)
+                    self._save_training_ckpt(t, score_ckpt, reason="emergency")
+                else:
+                    print(
+                        f"[signal] step={t} already on save schedule — exit",
+                        flush=True,
+                    )
+                interrupted = True
+                break
+
+        if interrupted:
+            summary = {
+                "algorithm": cfg.algorithm,
+                "env": cfg.env,
+                "seed": cfg.seed,
+                "capo_mode": "teacher",
+                "status": "interrupted",
+                "step": int(self.total_it),
+                "best_student_score": self.best_score,
+                "run_dir": str(self.run_dir),
+                "elapsed_sec": time.time() - t0,
+                "note": "Stopped by SIGTERM/SIGINT after emergency/schedule ckpt.",
+            }
+            with open(self.run_dir / "interrupted.json", "w") as f:
+                json.dump(summary, f, indent=2)
+            print(f"[interrupted] {summary}", flush=True)
+            return summary
+
         # Always persist the 1M (max_timesteps) weights — not only best.pt.
         final_payload = {
             "actor": self.actor.state_dict(),
@@ -1173,4 +1411,11 @@ class CAPOTrainer:
         with open(self.run_dir / "summary.json", "w") as f:
             json.dump(summary, f, indent=2)
         print(f"[done] {summary}", flush=True)
+        try:
+            from scripts.plot_training_curve import plot_run
+
+            curve_path = plot_run(self.run_dir)
+            print(f"[plot] training curve → {curve_path}", flush=True)
+        except Exception as e:
+            print(f"[plot] skipped: {e}", flush=True)
         return summary

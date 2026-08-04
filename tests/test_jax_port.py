@@ -167,7 +167,6 @@ def test_jax_pilot_adaptive_controller():
     refiner = ScriptedRefiner()
     cfg = CAPOConfig(
         n_max=1,
-        tau_controller="pilot_adaptive",
         tau_pilot_initial=0.01,
         tau_min=0.001,
         tau_max=0.05,

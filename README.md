@@ -113,6 +113,26 @@ python scripts/run_capo_jax.py --config configs/smoke.yaml \
 JAX_PLATFORMS=cpu python scripts/run_capo_jax.py --config configs/smoke.yaml --device cpu
 ```
 
+The JAX trainer fuses 32 replay-sample/update steps into one XLA dispatch by
+default while preserving exact logging, evaluation, and CAPO refresh steps.
+Override with `--jit_update_chunk N`; use `1` for debugging or strict
+single-step profiling. Stale incumbents default to `disable_teacher`; override with
+`--stale_incumbent_action` only for ablations. JAX runs also write
+`checkpoint_<step>.pkl` every 50k steps by default (`--save_ckpt_freq 0` disables).
+
+Post-hoc persistent BC distillation over those JAX student snapshots:
+
+```bash
+python scripts/run_posthoc_student_distill_jax.py \
+  --checkpoint_dir results/td3_bc/<env>/s0/<run_dir> \
+  --start_step 100000 --end_step 1000000 --checkpoint_interval 50000
+```
+
+The distillation actor is initialized once from the first student, keeps one
+Adam state across the chronological sequence, and uses only action MSE. Its
+updates and on-device replay sampling are fused with `jit + lax.scan`; tune with
+`--jit_update_chunk`.
+
 **choi pipeline** (capo×9 → v8_hold×9 → baseline×9, sequential):
 
 ```bash
@@ -170,7 +190,7 @@ Matrix queue tracking (local only):
 | Training | `max_timesteps`, `batch_size`, `eval_freq`, `n_episodes`, `discount`, `n_critics` | Standard offline RL schedule |
 | CAPO schedule | `use_capo`, `capo_start_step`, `capo_period`, `n_max`, `refine_steps` | When and how often CAPO runs |
 | Certificate | `beta_uncertainty`, `shift_penalty_coef`, `data_penalty_coef`, `normalize_delta_q`, `split_critics_for_certification` | Offline improvement certificate |
-| τ search | `tau_controller: pilot_adaptive`, `tau_candidates`, `tau_min`/`tau_max`, `target_action_mse`, `tau_pilot_initial`, `max_action_mse` | Pilot-adaptive proximal step size |
+| τ search | `pilot_adaptive` (fixed), `tau_min`/`tau_max`, `target_action_mse`, `tau_pilot_initial`, `max_action_mse` | Pilot-adaptive proximal step size |
 | Teacher / actor | `lambda_D`, `lambda_T`, `teacher_hold`, `hold_teacher_on_nstar_zero`, `use_replace_gate`, `replace_cert_margin` | Student loss and teacher lifecycle |
 | Eval | `eval_base_actor`, `eval_teacher_actor`, `paired_eval_episodes` | Student vs teacher rollouts |
 

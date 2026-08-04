@@ -36,7 +36,8 @@ mode = os.environ["MODE"]
 now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
 
 ENVS = ["hopper", "halfcheetah", "walker2d"]
-DATASETS = ["medium", "expert", "replay"]
+# Paper queue datasets. Leftover expert rows (if any) are preserved via `by`.
+DATASETS = ["medium", "medium-expert", "replay"]
 
 with board.open(newline="", encoding="utf-8") as fh:
     rows = list(csv.DictReader(fh))

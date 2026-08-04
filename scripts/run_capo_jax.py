@@ -13,6 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# These must be set before importing D4RL/MuJoCo or JAX.
+os.environ.setdefault("D4RL_SUPPRESS_IMPORT_ERROR", "1")
+os.environ.setdefault("MUJOCO_GL", "egl")
+os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+_mujoco_bin = Path.home() / ".mujoco" / "mujoco210" / "bin"
+if _mujoco_bin.is_dir():
+    _ld_paths = [p for p in os.environ.get("LD_LIBRARY_PATH", "").split(":") if p]
+    if str(_mujoco_bin) not in _ld_paths:
+        os.environ["LD_LIBRARY_PATH"] = ":".join([str(_mujoco_bin), *_ld_paths])
+        # The dynamic loader snapshots LD_LIBRARY_PATH at process startup.
+        os.execv(sys.executable, [sys.executable, *sys.argv])
+
 from capo_jax.trainer import CAPOTrainer, TrainConfig  # noqa: E402
 
 ENV_ALIASES = {
@@ -43,12 +55,17 @@ def parse_args():
     p.add_argument("--env_base", type=str, default=None, choices=["hopper", "halfcheetah", "walker2d"])
     p.add_argument("--dataset", type=str, default=None, help="medium | expert | replay")
     p.add_argument("--seed", type=int, default=None)
+    p.add_argument("--rng_seed", type=int, default=None)
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--max_timesteps", type=int, default=None)
     p.add_argument("--eval_freq", type=int, default=None)
     p.add_argument("--n_episodes", type=int, default=None)
     p.add_argument("--out_dir", type=str, default=None)
-    p.add_argument("--run_tag", type=str, default=None, help="Folder tag, e.g. capo|baseline")
+    p.add_argument("--run_tag", type=str, default=None, help="Folder tag, e.g. capo or baseline")
+    p.add_argument("--run_id", type=str, default=None)
+    p.add_argument("--sweep_name", type=str, default=None)
+    p.add_argument("--resume_run_dir", type=str, default=None)
+    p.add_argument("--heartbeat_freq", type=int, default=None)
     p.add_argument("--no_capo", action="store_true")
     p.add_argument("--n_max", type=int, default=None)
     p.add_argument("--capo_period", type=int, default=None)
@@ -58,9 +75,35 @@ def parse_args():
     p.add_argument("--tau_pilot_initial", type=float, default=None)
     p.add_argument("--target_action_mse", type=float, default=None)
     p.add_argument("--batch_size", type=int, default=None)
+    p.add_argument(
+        "--jit_update_chunk", type=int, default=None,
+        help="Number of updates fused into one XLA dispatch (default: 32)",
+    )
+    p.add_argument(
+        "--save_ckpt_freq", type=int, default=None,
+        help="Periodic .pkl actor snapshots for BC distillation; 0 disables",
+    )
     p.add_argument("--beta_uncertainty", type=float, default=None)
     p.add_argument("--max_action_mse", type=float, default=None)
     p.add_argument("--replace_cert_margin", type=float, default=None)
+    p.add_argument(
+        "--stale_incumbent_action",
+        type=str,
+        default=None,
+        choices=["disable", "quarantine", "keep_old", "replace_new", "disable_teacher"],
+    )
+    p.add_argument(
+        "--nstar_zero_action", choices=["legacy_hold", "revalidate_current"], default=None
+    )
+    p.add_argument("--save_refresh_actors", action="store_true")
+    p.add_argument(
+        "--td3_actor_objective", choices=["capo_student", "td3bc_legacy"], default=None
+    )
+    p.add_argument(
+        "--teacher_bc_mode",
+        choices=["uniform", "statewise_lcb_mask"],
+        default=None,
+    )
     return p.parse_args()
 
 
@@ -94,6 +137,8 @@ def load_config(args) -> TrainConfig:
             cfg.algorithm = "td3_bc"
     if args.seed is not None:
         cfg.seed = args.seed
+    if args.rng_seed is not None:
+        cfg.rng_seed = args.rng_seed
     if args.device is not None:
         cfg.device = args.device
     if args.max_timesteps is not None:
@@ -106,6 +151,14 @@ def load_config(args) -> TrainConfig:
         cfg.out_dir = args.out_dir
     if args.run_tag is not None:
         cfg.run_tag = args.run_tag
+    if args.run_id is not None:
+        cfg.run_id = args.run_id
+    if args.sweep_name is not None:
+        cfg.sweep_name = args.sweep_name
+    if args.resume_run_dir is not None:
+        cfg.resume_run_dir = args.resume_run_dir
+    if args.heartbeat_freq is not None:
+        cfg.heartbeat_freq = max(0, args.heartbeat_freq)
     if args.no_capo:
         cfg.use_capo = False
         if not cfg.run_tag:
@@ -127,12 +180,30 @@ def load_config(args) -> TrainConfig:
         cfg.target_action_mse = args.target_action_mse
     if args.batch_size is not None:
         cfg.batch_size = args.batch_size
+    if args.jit_update_chunk is not None:
+        cfg.jit_update_chunk = max(1, args.jit_update_chunk)
+    if args.save_ckpt_freq is not None:
+        cfg.save_ckpt_freq = max(0, args.save_ckpt_freq)
     if args.beta_uncertainty is not None:
         cfg.beta_uncertainty = args.beta_uncertainty
     if args.max_action_mse is not None:
         cfg.max_action_mse = args.max_action_mse
     if args.replace_cert_margin is not None:
         cfg.replace_cert_margin = args.replace_cert_margin
+    if args.stale_incumbent_action is not None:
+        cfg.stale_incumbent_action = (
+            "disable"
+            if args.stale_incumbent_action == "disable_teacher"
+            else args.stale_incumbent_action
+        )
+    if args.nstar_zero_action is not None:
+        cfg.nstar_zero_action = args.nstar_zero_action
+    if args.save_refresh_actors:
+        cfg.save_refresh_actors = True
+    if args.td3_actor_objective is not None:
+        cfg.td3_actor_objective = args.td3_actor_objective
+    if args.teacher_bc_mode is not None:
+        cfg.teacher_bc_mode = args.teacher_bc_mode
 
     if cfg.algorithm == "iql" and "tau" not in cfg_dict:
         cfg.tau = 0.001
@@ -146,9 +217,6 @@ def load_config(args) -> TrainConfig:
 
 
 def main():
-    os.environ.setdefault("D4RL_SUPPRESS_IMPORT_ERROR", "1")
-    os.environ.setdefault("MUJOCO_GL", "egl")
-    os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
     args = parse_args()
     cfg = load_config(args)
     trainer = CAPOTrainer(cfg)

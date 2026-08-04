@@ -17,7 +17,7 @@ VARIANT="v8_hold"
 RUN_TAG="v8_hold"
 
 ENVS=(hopper halfcheetah walker2d)
-DATASETS=(medium expert replay)
+DATASETS=(medium medium-expert replay)
 
 STATUS_FILE="$OUT_DIR/queue_status_v8_hold.tsv"
 mkdir -p "$OUT_DIR"
@@ -74,7 +74,9 @@ for envb in "${ENVS[@]}"; do
     case "$ds" in
       medium) env_id="${envb}-medium-v2" ;;
       expert) env_id="${envb}-expert-v2" ;;
-      replay) env_id="${envb}-medium-replay-v2" ;;
+      medium-expert|medium_expert) env_id="${envb}-medium-expert-v2" ;;
+      replay|medium-replay|medium_replay) env_id="${envb}-medium-replay-v2" ;;
+      *) env_id="${envb}-${ds}-v2" ;;
     esac
     started="$(date '+%F %T')"
     mark "$envb" "$ds" "running" "pending" "$started" ""
@@ -96,6 +98,9 @@ for envb in "${ENVS[@]}"; do
     if [[ $rc -eq 0 ]]; then
       mark "$envb" "$ds" "done" "$run_dir" "$started" "$finished"
       echo "[ok] $VARIANT $envb $ds → $run_dir"
+      if [[ -d "$run_dir" && -f "$run_dir/metrics.jsonl" ]]; then
+        "$PYTHON" scripts/plot_training_curve.py "$run_dir" || true
+      fi
     else
       mark "$envb" "$ds" "failed" "$run_dir" "$started" "$finished"
       echo "[fail] $VARIANT $envb $ds rc=$rc"
