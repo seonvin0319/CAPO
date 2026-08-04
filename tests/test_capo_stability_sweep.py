@@ -24,13 +24,16 @@ from scripts.run_capo_stability_sweep import run_status
 def test_exact_factorial_and_seed0_manifest():
     configs = sweep_configurations()
     rows = generate_manifest(seeds=(0,))
-    assert len(configs) == 24
+    assert len(configs) == 36
     assert len(ENVIRONMENTS) == 9
     assert set(row["environment"] for row in rows) == set(ENVIRONMENTS)
-    assert len(rows) == 216
-    assert len({row["run_id"] for row in rows}) == 216
-    assert len({row["config_id"] for row in rows}) == 24
+    assert len(rows) == 324
+    assert len({row["run_id"] for row in rows}) == 324
+    assert len({row["config_id"] for row in rows}) == 36
     assert tuple(FACTORS["lambda_T"]) == (0.0, 0.5, 1.0)
+    assert tuple(FACTORS["stale_incumbent_action"]) == (
+        "disable", "quarantine", "replace_new",
+    )
 
 
 def test_run_ids_and_rng_streams_are_stable_and_distinct():
@@ -90,6 +93,7 @@ def test_stale_disable_and_quarantine_semantics():
     )
     disabled = decide_replacement_gate(**common, stale_action="disable")
     quarantined = decide_replacement_gate(**common, stale_action="quarantine")
+    replaced = decide_replacement_gate(**common, stale_action="replace_new")
     kept = decide_replacement_gate(**common, stale_action="keep_old")
     assert disabled.gate_action == "stale_disable"
     assert disabled.next_teacher_state == "disabled"
@@ -97,6 +101,8 @@ def test_stale_disable_and_quarantine_semantics():
     assert quarantined.gate_action == "stale_quarantine"
     assert quarantined.next_teacher_state == "quarantined"
     assert not quarantined.activate_new and quarantined.preserve_quarantined
+    assert replaced.gate_action == "replace_new"
+    assert replaced.activate_new and replaced.stale_event
     assert kept.gate_action == "stale_keep_old"
     assert kept.next_teacher_state == "active"
     assert kept.activate_existing and not kept.activate_new

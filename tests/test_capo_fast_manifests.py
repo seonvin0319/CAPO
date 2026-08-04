@@ -38,7 +38,10 @@ def test_revised_and_reference_manifests():
     broad = broad_manifest()
     baseline = baseline_manifest()
     legacy = legacy_manifest()
-    assert len(broad) == 216 and len({row["run_id"] for row in broad}) == 216
+    assert len(broad) == 324 and len({row["run_id"] for row in broad}) == 324
+    assert sum(
+        1 for row in broad if row["config"]["stale_incumbent_action"] == "replace_new"
+    ) == 108
     assert all(row["config"]["paired_eval_episodes"] == 0 for row in broad)
     assert all(row["config"]["save_refresh_actors"] is True for row in broad)
     assert all(row["config"]["nstar_zero_action"] == "revalidate_current" for row in broad)

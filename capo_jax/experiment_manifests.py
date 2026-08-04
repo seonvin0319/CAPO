@@ -70,7 +70,7 @@ def broad_manifest(
                     config={**fixed, **factors}, factors=dict(factors),
                     results_root=results_root,
                 ))
-    _validate(rows, expected=24 * len(ENVIRONMENTS) * len(seeds))
+    _validate(rows, expected=36 * len(ENVIRONMENTS) * len(seeds))
     return rows
 
 

@@ -11,8 +11,8 @@ environments:
 - walker2d-medium-replay-v2
 seeds:
 - 0
-num_configurations: 24
-num_runs: 216
+num_configurations: 36
+num_runs: 324
 resolved_example:
   algorithm: td3_bc
   device: cuda

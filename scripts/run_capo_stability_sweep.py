@@ -42,6 +42,53 @@ def run_status(row: Dict[str, Any]) -> str:
     return "pending"
 
 
+def find_live_trainer_pid(run_id: str) -> int | None:
+    """Return PID of a live run_capo_jax for this run_id, if any."""
+    needle = f"/{run_id}/"
+    try:
+        for entry in Path("/proc").iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                cmdline = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode()
+            except (FileNotFoundError, ProcessLookupError, PermissionError):
+                continue
+            if "run_capo_jax.py" in cmdline and needle in cmdline:
+                return int(entry.name)
+    except FileNotFoundError:
+        return None
+    return None
+
+
+def live_cuda_device(pid: int) -> str | None:
+    try:
+        environ = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+    except (FileNotFoundError, ProcessLookupError, PermissionError):
+        return None
+    for item in environ:
+        if item.startswith(b"CUDA_VISIBLE_DEVICES="):
+            value = item.split(b"=", 1)[1].decode()
+            return value.split(",")[0] if value else None
+    return None
+
+
+class _ExternalProcess:
+    """Minimal poll() wrapper for trainers launched by a previous runner."""
+
+    def __init__(self, pid: int):
+        self.pid = pid
+
+    def poll(self):
+        if Path(f"/proc/{self.pid}").exists():
+            return None
+        return 0
+
+
+class _NullLog:
+    def close(self):
+        return None
+
+
 def write_progress(path: Path, rows: List[Dict[str, Any]], running: Dict[int, Any]):
     counts: Dict[str, int] = {}
     for row in rows:
@@ -169,6 +216,8 @@ def main():
     overlay = prepare_mujoco_overlay(results_root, args.mujoco_py_source)
     progress_path = results_root / rows[0]["config"]["sweep_name"] / "sweep_progress.json"
     pending = []
+    resume_first = []
+    adopted: List[Dict[str, Any]] = []
     for row in rows:
         status = run_status(row)
         if args.resume and status == "complete":
@@ -181,14 +230,60 @@ def main():
             raise RuntimeError(
                 f"{row['run_id']} has outputs but no checkpoint; inspect before retry"
             )
-        pending.append(row)
+        live_pid = find_live_trainer_pid(row["run_id"])
+        if live_pid is not None:
+            adopted.append({"pid": live_pid, "row": row})
+            continue
+        # Prefer resuming incomplete/failed cells before launching brand-new ones.
+        if status in ("incomplete", "failed"):
+            resume_first.append(row)
+        else:
+            pending.append(row)
+    def _resume_progress(row: Dict[str, Any]) -> int:
+        run_dir = Path(row["output_dir"])
+        steps = []
+        for path in run_dir.glob("checkpoint_*.pkl"):
+            try:
+                steps.append(int(path.stem.split("_", 1)[1]))
+            except (IndexError, ValueError):
+                continue
+        return max(steps) if steps else 0
+
+    resume_first.sort(key=_resume_progress, reverse=True)
+    pending = resume_first + pending
 
     running: Dict[int, Dict[str, Any]] = {}
     free_slots = list(slots)
+    for job in adopted:
+        gpu = live_cuda_device(job["pid"])
+        if gpu in free_slots:
+            free_slots.remove(gpu)
+        elif free_slots:
+            gpu = free_slots.pop(0)
+        else:
+            gpu = gpu or "?"
+        running[job["pid"]] = {
+            "process": _ExternalProcess(job["pid"]),
+            "row": job["row"],
+            "gpu": gpu,
+            "started": time.time(),
+            "log": _NullLog(),
+        }
+        print(
+            f"[adopt] gpu={gpu} pid={job['pid']} {job['row']['run_id']}",
+            flush=True,
+        )
     try:
         while pending or running:
             while pending and free_slots:
                 row = pending.pop(0)
+                live_pid = find_live_trainer_pid(row["run_id"])
+                if live_pid is not None:
+                    print(
+                        f"[skip-live] pid={live_pid} {row['run_id']}",
+                        flush=True,
+                    )
+                    continue
                 gpu = free_slots.pop(0)
                 run_dir = Path(row["output_dir"]).resolve()
                 run_dir.mkdir(parents=True, exist_ok=True)
@@ -259,8 +354,9 @@ def main():
                 if returncode is None:
                     continue
                 job["log"].close()
-                free_slots.append(job["gpu"])
-                free_slots.sort(key=lambda item: slots.index(item))
+                if job["gpu"] in slots:
+                    free_slots.append(job["gpu"])
+                    free_slots.sort(key=lambda item: slots.index(item))
                 row = job["row"]
                 if returncode != 0:
                     failure = {

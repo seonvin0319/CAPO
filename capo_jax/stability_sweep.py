@@ -26,7 +26,7 @@ FACTORS = {
     "lambda_T": (0.0, 0.5, 1.0),
     "capo_period": (50_000, 100_000),
     "replace_cert_margin": (0.0, 0.001),
-    "stale_incumbent_action": ("disable", "quarantine"),
+    "stale_incumbent_action": ("disable", "quarantine", "replace_new"),
 }
 FIXED_CONFIG: Dict[str, Any] = {
     "algorithm": "td3_bc",
@@ -119,7 +119,7 @@ def sweep_configurations() -> List[Dict[str, Any]]:
     configs = []
     for values in itertools.product(*(FACTORS[key] for key in keys)):
         configs.append(dict(zip(keys, values)))
-    assert len(configs) == 24
+    assert len(configs) == 36
     return configs
 
 
