@@ -178,12 +178,12 @@ def run_parity(
     gate_j = decide_replacement_gate(
         teacher_state="active", has_new=True, student_to_new=cert_j,
         student_to_existing=c_so_j, existing_to_new=c_on_j, margin=margin,
-        stale_action=config.get("stale_incumbent_action", "disable"),
+        stale_action=config.get("stale_incumbent_action", "replace_new"),
     ).gate_action
     gate_t = decide_replacement_gate(
         teacher_state="active", has_new=True, student_to_new=cert_t,
         student_to_existing=c_so_t, existing_to_new=c_on_t, margin=margin,
-        stale_action=config.get("stale_incumbent_action", "disable"),
+        stale_action=config.get("stale_incumbent_action", "replace_new"),
     ).gate_action
     report = {
         "parameter_conversion": "supported",

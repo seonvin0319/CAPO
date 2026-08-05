@@ -147,7 +147,7 @@ class TrainConfig:
     use_replace_gate: bool = True
     replace_cert_margin: float = 0.0
     # Stale means current old invalid and current new valid.
-    stale_incumbent_action: str = "disable"  # disable|quarantine|keep_old|replace_new
+    stale_incumbent_action: str = "replace_new"  # disable|quarantine|keep_old|replace_new
     nstar_zero_action: str = "revalidate_current"
     save_refresh_actors: bool = False
 
