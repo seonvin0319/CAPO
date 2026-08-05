@@ -1,6 +1,6 @@
 # Sweep summary — `capo_stability_seed0_fast` (`n_critics=4`)
 
-Updated: **2026-08-05 15:08 KST**
+Updated: **2026-08-05 17:36 KST**
 Host: **ext_csh**
 Source: `results_jax_sweeps/capo_stability_seed0_fast/`
 Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, seed 0)
@@ -14,7 +14,7 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 | hopper-medium-replay | 23.35 | **85.89** | +62.54 | `fast_hmr_s0_lt0p5_p100k_mm1e3_replace_new` | 0.5 | 100000 | -0.001 | replace_new |
 | halfcheetah-medium | 49.44 | **53.15** | +3.71 | `fast_cm_s0_lt1_p100k_m0_disable` | 1.0 | 100000 | 0.0 | disable |
 | halfcheetah-medium-expert | 81.27 | **90.85** | +9.57 | `fast_cmexp_s0_lt0_p100k_m0_quarantine` | 0.0 | 100000 | 0.0 | quarantine |
-| halfcheetah-medium-replay | 45.39 | **48.52** | +3.13 | `fast_cmr_s0_lt0p5_p100k_m0_replace_new` | 0.5 | 100000 | 0.0 | replace_new |
+| halfcheetah-medium-replay | 45.39 | **49.06** | +3.67 | `fast_cmr_s0_lt0_p100k_mm1e3_replace_new` | 0.0 | 100000 | -0.001 | replace_new |
 | walker2d-medium | 83.47 | **84.96** | +1.50 | `fast_wm_s0_lt1_p100k_m0_quarantine` | 1.0 | 100000 | 0.0 | quarantine |
 | walker2d-medium-expert | 110.85 | **114.92** | +4.07 | `fast_wmexp_s0_lt1_p100k_m0_replace_new` | 1.0 | 100000 | 0.0 | replace_new |
 | walker2d-medium-replay | 30.78 | **91.98** | +61.19 | `fast_wmr_s0_lt0p5_p100k_m0_replace_new` | 0.5 | 100000 | 0.0 | replace_new |
@@ -24,6 +24,9 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 - JAX CAPO, seed 0, **`n_critics=4`**
 - Active policy: `stale=replace_new`, `period=100k`, `λ_T∈{0,0.5,1}`, `margin∈{0,-1e-3}`
 - Metric: final `student_d4rl_score` @1M
+
+- Active complete: **45/54** (m0=27/27, mm1e3=18/27)
+- All-history complete artifacts used for best: **149**
 
 ## Environments (9)
 
@@ -40,9 +43,9 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 | hopper-medium | 3/3 | 3/3 | 100.27 | **100.27** (`lt=1.0`) | **84.72** (`lt=0.5`) |
 | hopper-medium-expert | 3/3 | 3/3 | 112.34 | **112.34** (`lt=0.5`) | **100.83** (`lt=1.0`) |
 | hopper-medium-replay | 3/3 | 3/3 | 85.89 | **73.80** (`lt=0.5`) | **85.89** (`lt=0.5`) |
-| halfcheetah-medium | 3/3 | 0/3 | 53.15 | **51.55** (`lt=1.0`) | — |
-| halfcheetah-medium-expert | 3/3 | 0/3 | 90.85 | **79.91** (`lt=1.0`) | — |
-| halfcheetah-medium-replay | 3/3 | 0/3 | 48.52 | **48.52** (`lt=0.5`) | — |
+| halfcheetah-medium | 3/3 | 3/3 | 53.15 | **51.55** (`lt=1.0`) | **52.19** (`lt=1.0`) |
+| halfcheetah-medium-expert | 3/3 | 3/3 | 90.85 | **79.91** (`lt=1.0`) | **85.33** (`lt=0.0`) |
+| halfcheetah-medium-replay | 3/3 | 3/3 | 49.06 | **48.52** (`lt=0.5`) | **49.06** (`lt=0.0`) |
 | walker2d-medium | 3/3 | 0/3 | 84.96 | **84.38** (`lt=0.0`) | — |
 | walker2d-medium-expert | 3/3 | 0/3 | 114.92 | **114.92** (`lt=1.0`) | — |
 | walker2d-medium-replay | 3/3 | 0/3 | 91.98 | **91.98** (`lt=0.5`) | — |
@@ -56,7 +59,7 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 | hopper-medium-replay | **85.89** | `fast_hmr_s0_lt0p5_p100k_mm1e3_replace_new` | 0.5 | 100000 | -0.001 | replace_new |
 | halfcheetah-medium | **53.15** | `fast_cm_s0_lt1_p100k_m0_disable` | 1.0 | 100000 | 0.0 | disable |
 | halfcheetah-medium-expert | **90.85** | `fast_cmexp_s0_lt0_p100k_m0_quarantine` | 0.0 | 100000 | 0.0 | quarantine |
-| halfcheetah-medium-replay | **48.52** | `fast_cmr_s0_lt0p5_p100k_m0_replace_new` | 0.5 | 100000 | 0.0 | replace_new |
+| halfcheetah-medium-replay | **49.06** | `fast_cmr_s0_lt0_p100k_mm1e3_replace_new` | 0.0 | 100000 | -0.001 | replace_new |
 | walker2d-medium | **84.96** | `fast_wm_s0_lt1_p100k_m0_quarantine` | 1.0 | 100000 | 0.0 | quarantine |
 | walker2d-medium-expert | **114.92** | `fast_wmexp_s0_lt1_p100k_m0_replace_new` | 1.0 | 100000 | 0.0 | replace_new |
 | walker2d-medium-replay | **91.98** | `fast_wmr_s0_lt0p5_p100k_m0_replace_new` | 0.5 | 100000 | 0.0 | replace_new |
@@ -100,25 +103,34 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 
 | rank | score | λ_T | margin | run |
 |---:|---:|---:|---:|---|
-| 1 | **51.55** | 1.0 | 0.0 | `fast_cm_s0_lt1_p100k_m0_replace_new` |
-| 2 | 51.39 | 0.0 | 0.0 | `fast_cm_s0_lt0_p100k_m0_replace_new` |
-| 3 | 50.98 | 0.5 | 0.0 | `fast_cm_s0_lt0p5_p100k_m0_replace_new` |
+| 1 | **52.19** | 1.0 | -0.001 | `fast_cm_s0_lt1_p100k_mm1e3_replace_new` |
+| 2 | 51.55 | 1.0 | 0.0 | `fast_cm_s0_lt1_p100k_m0_replace_new` |
+| 3 | 51.39 | 0.0 | 0.0 | `fast_cm_s0_lt0_p100k_m0_replace_new` |
+| 4 | 51.36 | 0.0 | -0.001 | `fast_cm_s0_lt0_p100k_mm1e3_replace_new` |
+| 5 | 51.09 | 0.5 | -0.001 | `fast_cm_s0_lt0p5_p100k_mm1e3_replace_new` |
+| 6 | 50.98 | 0.5 | 0.0 | `fast_cm_s0_lt0p5_p100k_m0_replace_new` |
 
 ### halfcheetah-medium-expert
 
 | rank | score | λ_T | margin | run |
 |---:|---:|---:|---:|---|
-| 1 | **79.91** | 1.0 | 0.0 | `fast_cmexp_s0_lt1_p100k_m0_replace_new` |
-| 2 | 77.63 | 0.5 | 0.0 | `fast_cmexp_s0_lt0p5_p100k_m0_replace_new` |
-| 3 | 73.01 | 0.0 | 0.0 | `fast_cmexp_s0_lt0_p100k_m0_replace_new` |
+| 1 | **85.33** | 0.0 | -0.001 | `fast_cmexp_s0_lt0_p100k_mm1e3_replace_new` |
+| 2 | 79.91 | 1.0 | 0.0 | `fast_cmexp_s0_lt1_p100k_m0_replace_new` |
+| 3 | 77.63 | 0.5 | 0.0 | `fast_cmexp_s0_lt0p5_p100k_m0_replace_new` |
+| 4 | 73.01 | 0.0 | 0.0 | `fast_cmexp_s0_lt0_p100k_m0_replace_new` |
+| 5 | 71.01 | 0.5 | -0.001 | `fast_cmexp_s0_lt0p5_p100k_mm1e3_replace_new` |
+| 6 | 70.62 | 1.0 | -0.001 | `fast_cmexp_s0_lt1_p100k_mm1e3_replace_new` |
 
 ### halfcheetah-medium-replay
 
 | rank | score | λ_T | margin | run |
 |---:|---:|---:|---:|---|
-| 1 | **48.52** | 0.5 | 0.0 | `fast_cmr_s0_lt0p5_p100k_m0_replace_new` |
-| 2 | 47.99 | 1.0 | 0.0 | `fast_cmr_s0_lt1_p100k_m0_replace_new` |
-| 3 | 46.80 | 0.0 | 0.0 | `fast_cmr_s0_lt0_p100k_m0_replace_new` |
+| 1 | **49.06** | 0.0 | -0.001 | `fast_cmr_s0_lt0_p100k_mm1e3_replace_new` |
+| 2 | 48.52 | 0.5 | 0.0 | `fast_cmr_s0_lt0p5_p100k_m0_replace_new` |
+| 3 | 47.99 | 1.0 | 0.0 | `fast_cmr_s0_lt1_p100k_m0_replace_new` |
+| 4 | 47.97 | 1.0 | -0.001 | `fast_cmr_s0_lt1_p100k_mm1e3_replace_new` |
+| 5 | 46.80 | 0.0 | 0.0 | `fast_cmr_s0_lt0_p100k_m0_replace_new` |
+| 6 | 46.40 | 0.5 | -0.001 | `fast_cmr_s0_lt0p5_p100k_mm1e3_replace_new` |
 
 ### walker2d-medium
 
@@ -151,9 +163,9 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 | hopper-medium | 100.27 | 84.72 | -15.55 |
 | hopper-medium-expert | 112.34 | 100.83 | -11.51 |
 | hopper-medium-replay | 73.80 | 85.89 | +12.09 |
-| halfcheetah-medium | 51.55 | — | — |
-| halfcheetah-medium-expert | 79.91 | — | — |
-| halfcheetah-medium-replay | 48.52 | — | — |
+| halfcheetah-medium | 51.55 | 52.19 | +0.64 |
+| halfcheetah-medium-expert | 79.91 | 85.33 | +5.42 |
+| halfcheetah-medium-replay | 48.52 | 49.06 | +0.54 |
 | walker2d-medium | 84.38 | — | — |
 | walker2d-medium-expert | 114.92 | — | — |
 | walker2d-medium-replay | 91.98 | — | — |
