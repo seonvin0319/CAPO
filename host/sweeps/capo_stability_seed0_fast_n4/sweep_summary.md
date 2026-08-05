@@ -1,6 +1,6 @@
 # Sweep summary — `capo_stability_seed0_fast` (`n_critics=4`)
 
-Updated: **2026-08-05 17:36 KST**
+Updated: **2026-08-05 21:13 KST**
 Host: **ext_csh**
 Source: `results_jax_sweeps/capo_stability_seed0_fast/`
 Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, seed 0)
@@ -24,17 +24,8 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 - JAX CAPO, seed 0, **`n_critics=4`**
 - Active policy: `stale=replace_new`, `period=100k`, `λ_T∈{0,0.5,1}`, `margin∈{0,-1e-3}`
 - Metric: final `student_d4rl_score` @1M
-
-- Active complete: **45/54** (m0=27/27, mm1e3=18/27)
-- All-history complete artifacts used for best: **149**
-
-## Environments (9)
-
-| env_base | datasets |
-|---|---|
-| hopper | medium, medium-expert, medium-replay |
-| halfcheetah | medium, medium-expert, medium-replay |
-| walker2d | medium, medium-expert, medium-replay |
+- Active complete: **54/54** (m0=27/27, mm1e3=27/27)
+- All-history complete artifacts used for best: **158**
 
 ## Active queue progress
 
@@ -46,11 +37,11 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 | halfcheetah-medium | 3/3 | 3/3 | 53.15 | **51.55** (`lt=1.0`) | **52.19** (`lt=1.0`) |
 | halfcheetah-medium-expert | 3/3 | 3/3 | 90.85 | **79.91** (`lt=1.0`) | **85.33** (`lt=0.0`) |
 | halfcheetah-medium-replay | 3/3 | 3/3 | 49.06 | **48.52** (`lt=0.5`) | **49.06** (`lt=0.0`) |
-| walker2d-medium | 3/3 | 0/3 | 84.96 | **84.38** (`lt=0.0`) | — |
-| walker2d-medium-expert | 3/3 | 0/3 | 114.92 | **114.92** (`lt=1.0`) | — |
-| walker2d-medium-replay | 3/3 | 0/3 | 91.98 | **91.98** (`lt=0.5`) | — |
+| walker2d-medium | 3/3 | 3/3 | 84.96 | **84.38** (`lt=0.0`) | **83.02** (`lt=0.5`) |
+| walker2d-medium-expert | 3/3 | 3/3 | 114.92 | **114.92** (`lt=1.0`) | **114.12** (`lt=1.0`) |
+| walker2d-medium-replay | 3/3 | 3/3 | 91.98 | **91.98** (`lt=0.5`) | **89.70** (`lt=0.5`) |
 
-## Per-env #1 (`n_critics=4`, all completed artifacts)
+## Per-env #1 (all completed artifacts)
 
 | env | score | run | λ_T | period | margin | stale |
 |---|---:|---|---:|---:|---:|---|
@@ -138,23 +129,32 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 |---:|---:|---:|---:|---|
 | 1 | **84.38** | 0.0 | 0.0 | `fast_wm_s0_lt0_p100k_m0_replace_new` |
 | 2 | 84.23 | 0.5 | 0.0 | `fast_wm_s0_lt0p5_p100k_m0_replace_new` |
-| 3 | 82.08 | 1.0 | 0.0 | `fast_wm_s0_lt1_p100k_m0_replace_new` |
+| 3 | 83.02 | 0.5 | -0.001 | `fast_wm_s0_lt0p5_p100k_mm1e3_replace_new` |
+| 4 | 82.08 | 1.0 | 0.0 | `fast_wm_s0_lt1_p100k_m0_replace_new` |
+| 5 | 80.79 | 1.0 | -0.001 | `fast_wm_s0_lt1_p100k_mm1e3_replace_new` |
+| 6 | 77.33 | 0.0 | -0.001 | `fast_wm_s0_lt0_p100k_mm1e3_replace_new` |
 
 ### walker2d-medium-expert
 
 | rank | score | λ_T | margin | run |
 |---:|---:|---:|---:|---|
 | 1 | **114.92** | 1.0 | 0.0 | `fast_wmexp_s0_lt1_p100k_m0_replace_new` |
-| 2 | 113.03 | 0.5 | 0.0 | `fast_wmexp_s0_lt0p5_p100k_m0_replace_new` |
-| 3 | 111.77 | 0.0 | 0.0 | `fast_wmexp_s0_lt0_p100k_m0_replace_new` |
+| 2 | 114.12 | 1.0 | -0.001 | `fast_wmexp_s0_lt1_p100k_mm1e3_replace_new` |
+| 3 | 113.57 | 0.5 | -0.001 | `fast_wmexp_s0_lt0p5_p100k_mm1e3_replace_new` |
+| 4 | 113.03 | 0.5 | 0.0 | `fast_wmexp_s0_lt0p5_p100k_m0_replace_new` |
+| 5 | 112.17 | 0.0 | -0.001 | `fast_wmexp_s0_lt0_p100k_mm1e3_replace_new` |
+| 6 | 111.77 | 0.0 | 0.0 | `fast_wmexp_s0_lt0_p100k_m0_replace_new` |
 
 ### walker2d-medium-replay
 
 | rank | score | λ_T | margin | run |
 |---:|---:|---:|---:|---|
 | 1 | **91.98** | 0.5 | 0.0 | `fast_wmr_s0_lt0p5_p100k_m0_replace_new` |
-| 2 | 86.10 | 1.0 | 0.0 | `fast_wmr_s0_lt1_p100k_m0_replace_new` |
-| 3 | 64.71 | 0.0 | 0.0 | `fast_wmr_s0_lt0_p100k_m0_replace_new` |
+| 2 | 89.70 | 0.5 | -0.001 | `fast_wmr_s0_lt0p5_p100k_mm1e3_replace_new` |
+| 3 | 86.10 | 1.0 | 0.0 | `fast_wmr_s0_lt1_p100k_m0_replace_new` |
+| 4 | 79.07 | 0.0 | -0.001 | `fast_wmr_s0_lt0_p100k_mm1e3_replace_new` |
+| 5 | 77.37 | 1.0 | -0.001 | `fast_wmr_s0_lt1_p100k_mm1e3_replace_new` |
+| 6 | 64.71 | 0.0 | 0.0 | `fast_wmr_s0_lt0_p100k_m0_replace_new` |
 
 ## Margin 0 vs −1e-3 (best λ_T each)
 
@@ -166,11 +166,11 @@ Baseline: `results_jax_sweeps/td3bc_4critic_jax_seed0/` (TD3+BC, `n_critics=4`, 
 | halfcheetah-medium | 51.55 | 52.19 | +0.64 |
 | halfcheetah-medium-expert | 79.91 | 85.33 | +5.42 |
 | halfcheetah-medium-replay | 48.52 | 49.06 | +0.54 |
-| walker2d-medium | 84.38 | — | — |
-| walker2d-medium-expert | 114.92 | — | — |
-| walker2d-medium-replay | 91.98 | — | — |
+| walker2d-medium | 84.38 | 83.02 | -1.35 |
+| walker2d-medium-expert | 114.92 | 114.12 | -0.80 |
+| walker2d-medium-replay | 91.98 | 89.70 | -2.27 |
 
 ## Notes
 
 - This file is **only** the `n_critics=4` campaign summary.
-- `n_critics=2` follow-on belongs under `host/sweeps/capo_stability_seed0_fast_n2/` separately.
+- Follow-on `n_critics=2` (expert/replay): `host/sweeps/capo_stability_seed0_fast_n2/`.
