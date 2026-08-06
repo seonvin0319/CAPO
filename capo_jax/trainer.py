@@ -43,6 +43,7 @@ from .networks import (
     ActorPolicy,
     CriticEnsemble,
     CriticEnsembleAdapter,
+    GaussianActor,
     ValueFunction,
     q_mean,
     q_min,
@@ -139,6 +140,10 @@ class TrainConfig:
     initial_tau: float = 0.01
     tau_pilot_initial: float = 0.01
     tau_duplicate_log_tolerance: float = 1e-6
+    # deterministic (default) | gaussian
+    actor_type: str = "deterministic"
+    # amse | wasserstein | auto (wasserstein iff gaussian)
+    distance_metric: str = "auto"
 
     capo_period: int = 100_000
     capo_start_step: int = 100_000
@@ -175,6 +180,10 @@ class TrainConfig:
         self.algorithm = self.algorithm.lower().replace("-", "_").replace("+", "")
         if self.algorithm in ("td3bc", "td3"):
             self.algorithm = "td3_bc"
+        # λ_T=0 → teacher BC is a no-op; skip CAPO refresh/eval cost entirely.
+        if float(self.lambda_T) <= 0.0:
+            self.use_capo = False
+            self.eval_teacher_actor = False
         if self.stale_incumbent_action == "disable_teacher":
             self.stale_incumbent_action = "disable"
         if self.stale_incumbent_action not in (
@@ -194,6 +203,18 @@ class TrainConfig:
             raise ValueError("tau_controller is fixed to pilot_adaptive")
         if self.teacher_bc_mode not in ("uniform", "statewise_lcb_mask"):
             raise ValueError("teacher_bc_mode must be uniform or statewise_lcb_mask")
+        self.actor_type = str(self.actor_type).lower().replace("-", "_")
+        if self.actor_type not in ("deterministic", "gaussian"):
+            raise ValueError("actor_type must be deterministic or gaussian")
+        metric = str(self.distance_metric).lower()
+        if metric == "auto":
+            metric = "wasserstein" if self.actor_type == "gaussian" else "amse"
+        if metric not in ("amse", "wasserstein"):
+            raise ValueError("distance_metric must be amse, wasserstein, or auto")
+        if self.actor_type == "deterministic" and metric == "wasserstein":
+            # Dirac policies: W2 ≡ action MSE; keep amse path.
+            metric = "amse"
+        self.distance_metric = metric
         self.jit_update_chunk = max(1, int(self.jit_update_chunk))
         self.save_ckpt_freq = max(0, int(self.save_ckpt_freq))
 
@@ -394,7 +415,14 @@ class CAPOTrainer:
         self.buffer.load_d4rl(data)
 
         n_hidden = 3 if cfg.algorithm == "cql" else 2
-        self.actor_mod = Actor(action_dim=self.action_dim, max_action=self.max_action, hidden=cfg.hidden)
+        if cfg.actor_type == "gaussian":
+            self.actor_mod = GaussianActor(
+                action_dim=self.action_dim, max_action=self.max_action, hidden=cfg.hidden
+            )
+        else:
+            self.actor_mod = Actor(
+                action_dim=self.action_dim, max_action=self.max_action, hidden=cfg.hidden
+            )
         self.critic_mod = CriticEnsemble(
             n_critics=cfg.n_critics, hidden=cfg.hidden, n_hidden=n_hidden
         )
@@ -454,6 +482,9 @@ class CAPOTrainer:
         def actor_apply(params, s):
             return self.actor_mod.apply({"params": params}, s)
 
+        def actor_dist_apply(params, s):
+            return self.actor_mod.apply({"params": params}, s, return_dist=True)
+
         def critic_apply(params, s, a):
             return self.critic_mod.apply({"params": params}, s, a)
 
@@ -463,6 +494,9 @@ class CAPOTrainer:
         # These functions are also called outside the compiled update step by
         # evaluation and certificate code, so cache their executables here.
         self.actor_apply = jax.jit(actor_apply)
+        self.actor_dist_apply = (
+            jax.jit(actor_dist_apply) if cfg.actor_type == "gaussian" else None
+        )
         self.critic_apply = jax.jit(critic_apply)
         self.vf_apply = jax.jit(vf_apply) if self.vf_mod is not None else None
 
@@ -483,6 +517,8 @@ class CAPOTrainer:
             n_steps=cfg.refine_steps,
             actor_apply=self.actor_apply,
             critic_apply=self.critic_apply,
+            actor_dist_apply=self.actor_dist_apply,
+            use_wasserstein=(cfg.distance_metric == "wasserstein"),
         )
         self.capo_cfg = CAPOConfig(
             n_max=cfg.n_max,
@@ -498,6 +534,7 @@ class CAPOTrainer:
             initial_tau=cfg.initial_tau,
             tau_pilot_initial=cfg.tau_pilot_initial,
             tau_duplicate_log_tolerance=cfg.tau_duplicate_log_tolerance,
+            distance_metric=cfg.distance_metric,
         )
         self.tau_controller_state: List[dict] = [
             {
@@ -587,7 +624,7 @@ class CAPOTrainer:
 
     # ------------------------------------------------------------------ helpers
     def _policy(self, params) -> ActorPolicy:
-        return ActorPolicy(params, self.actor_apply)
+        return ActorPolicy(params, self.actor_apply, dist_fn=self.actor_dist_apply)
 
     def _split_critics(self):
         n_critics = self.cfg.n_critics
@@ -635,9 +672,15 @@ class CAPOTrainer:
         critic_params = optax.apply_updates(state.critic_params, critic_updates)
 
         do_actor = (state.total_it + 1) % cfg.policy_freq == 0
+        actor_dist_apply = self.actor_dist_apply
+        use_gaussian = cfg.actor_type == "gaussian" and actor_dist_apply is not None
 
         def actor_loss_fn(actor_params):
-            pi = actor_apply(actor_params, states)
+            if use_gaussian:
+                pi, std = actor_dist_apply(actor_params, states)
+            else:
+                pi = actor_apply(actor_params, states)
+                std = None
             q_student = critic_apply(critic_params, states, pi)
             q_values = q_mean(q_student)
             q_scale = jax.lax.stop_gradient(
@@ -655,7 +698,16 @@ class CAPOTrainer:
             else:
                 td3bc_scale = 1.0 / q_scale
                 q_term = -(q_values / q_scale).mean()
-                data_bc_weighted = cfg.lambda_D * jnp.mean((pi - actions) ** 2)
+                if use_gaussian:
+                    # Diagonal Gaussian NLL of dataset actions (trains μ and σ).
+                    eps = jnp.asarray(1e-6, dtype=pi.dtype)
+                    nll = 0.5 * (
+                        ((actions - pi) / (std + eps)) ** 2
+                        + 2.0 * jnp.log(std + eps)
+                    ).sum(axis=-1).mean()
+                    data_bc_weighted = cfg.lambda_D * nll
+                else:
+                    data_bc_weighted = cfg.lambda_D * jnp.mean((pi - actions) ** 2)
             bc_data = jnp.mean((pi - actions) ** 2)
             a_t = jax.lax.stop_gradient(actor_apply(state.teacher_params, states))
             q_teacher = jax.lax.stop_gradient(
@@ -1528,4 +1580,11 @@ class CAPOTrainer:
             json.dump(summary, f, indent=2)
         self._write_heartbeat(cfg.max_timesteps, status="complete")
         print(f"[done] {summary}", flush=True)
+        try:
+            from scripts.plot_training_curve import plot_run
+
+            curve_path = plot_run(self.run_dir)
+            print(f"[plot] training curve → {curve_path}", flush=True)
+        except Exception as e:
+            print(f"[plot] skipped: {e}", flush=True)
         return summary

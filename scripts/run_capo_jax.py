@@ -104,6 +104,18 @@ def parse_args():
         choices=["uniform", "statewise_lcb_mask"],
         default=None,
     )
+    p.add_argument(
+        "--actor_type",
+        choices=["deterministic", "gaussian"],
+        default=None,
+        help="Actor parameterization (gaussian → Wasserstein distance by default)",
+    )
+    p.add_argument(
+        "--distance_metric",
+        choices=["amse", "wasserstein", "auto"],
+        default=None,
+        help="CAPO movement metric; auto = wasserstein iff actor_type=gaussian",
+    )
     return p.parse_args()
 
 
@@ -173,6 +185,9 @@ def load_config(args) -> TrainConfig:
         cfg.lambda_D = args.lambda_D
     if args.lambda_T is not None:
         cfg.lambda_T = args.lambda_T
+        if float(cfg.lambda_T) <= 0.0:
+            cfg.use_capo = False
+            cfg.eval_teacher_actor = False
     if args.tau_pilot_initial is not None:
         cfg.tau_pilot_initial = args.tau_pilot_initial
         cfg.initial_tau = args.tau_pilot_initial
@@ -204,6 +219,10 @@ def load_config(args) -> TrainConfig:
         cfg.td3_actor_objective = args.td3_actor_objective
     if args.teacher_bc_mode is not None:
         cfg.teacher_bc_mode = args.teacher_bc_mode
+    if args.actor_type is not None:
+        cfg.actor_type = args.actor_type
+    if args.distance_metric is not None:
+        cfg.distance_metric = args.distance_metric
 
     if cfg.algorithm == "iql" and "tau" not in cfg_dict:
         cfg.tau = 0.001

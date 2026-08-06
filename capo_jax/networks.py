@@ -16,13 +16,46 @@ class Actor(nn.Module):
     hidden: int = 256
 
     @nn.compact
-    def __call__(self, state: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, state: jnp.ndarray, return_dist: bool = False):
         x = nn.Dense(self.hidden)(state)
         x = nn.relu(x)
         x = nn.Dense(self.hidden)(x)
         x = nn.relu(x)
         x = nn.Dense(self.action_dim)(x)
-        return self.max_action * jnp.tanh(x)
+        mean = self.max_action * jnp.tanh(x)
+        if return_dist:
+            # Dirac: std=0 so Wasserstein collapses to action MSE on means.
+            return mean, jnp.zeros_like(mean)
+        return mean
+
+
+class GaussianActor(nn.Module):
+    """Diagonal Gaussian actor with tanh-squashed mean (action-space std).
+
+    ``act`` / default forward returns the mean. ``return_dist=True`` returns
+    ``(mean, std)`` for closed-form W2 between diagonal Gaussians:
+    W2^2 = ||μ−μ'||^2 + ||σ−σ'||^2.
+    """
+
+    action_dim: int
+    max_action: float = 1.0
+    hidden: int = 256
+    log_std_min: float = -5.0
+    log_std_max: float = 2.0
+
+    @nn.compact
+    def __call__(self, state: jnp.ndarray, return_dist: bool = False):
+        x = nn.Dense(self.hidden)(state)
+        x = nn.relu(x)
+        x = nn.Dense(self.hidden)(x)
+        x = nn.relu(x)
+        mean = self.max_action * jnp.tanh(nn.Dense(self.action_dim)(x))
+        log_std = nn.Dense(self.action_dim)(x)
+        log_std = jnp.clip(log_std, self.log_std_min, self.log_std_max)
+        std = jnp.exp(log_std)
+        if return_dist:
+            return mean, std
+        return mean
 
 
 class QNet(nn.Module):
@@ -98,17 +131,28 @@ class ActorPolicy:
         self,
         params: Any,
         apply_fn: Callable[[Any, jnp.ndarray], jnp.ndarray],
+        dist_fn: Optional[
+            Callable[[Any, jnp.ndarray], Tuple[jnp.ndarray, jnp.ndarray]]
+        ] = None,
     ):
         self.params = params
         self.apply_fn = apply_fn
+        self.dist_fn = dist_fn
 
     def act(self, states: jnp.ndarray) -> jnp.ndarray:
         return self.apply_fn(self.params, states)
+
+    def dist_params(self, states: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        if self.dist_fn is not None:
+            return self.dist_fn(self.params, states)
+        mean = self.act(states)
+        return mean, jnp.zeros_like(mean)
 
     def copy(self) -> "ActorPolicy":
         return ActorPolicy(
             params=jax.tree_util.tree_map(lambda x: x, self.params),
             apply_fn=self.apply_fn,
+            dist_fn=self.dist_fn,
         )
 
 

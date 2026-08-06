@@ -1,0 +1,48 @@
+# CAPO defaults with n_critics=2 (gen/cert split 1+1 when certification split on).
+seed: 0
+device: cuda
+max_timesteps: 1000000
+eval_freq: 5000
+n_episodes: 10
+batch_size: 256
+
+normalize: true
+normalize_reward: true
+n_critics: 2
+discount: 0.99
+
+use_capo: true
+n_max: 2
+beta_uncertainty: 1.0
+shift_penalty_coef: 0.25
+data_penalty_coef: 0.5
+tau_candidates: [0.001, 0.003, 0.005, 0.01, 0.02, 0.05]
+tau_min: 0.001
+tau_max: 0.05
+max_action_mse: 0.15
+normalize_delta_q: true
+split_critics_for_certification: true
+refine_steps: 2
+
+tau_controller: pilot_adaptive
+target_action_mse: 0.0025
+tau_pilot_initial: 0.01
+tau_duplicate_log_tolerance: 1.0e-6
+
+capo_period: 100000
+capo_start_step: 100000
+lambda_D: 0.4
+lambda_T: 0.3
+bc_reduction: element_mean
+teacher_hold: true
+hold_teacher_on_nstar_zero: true
+use_replace_gate: true
+replace_cert_margin: 0.0
+
+eval_base_actor: true
+eval_teacher_actor: true
+paired_eval_episodes: 40
+paired_eval_seed0: 10000
+
+out_dir: results
+run_tag: capo_n2

@@ -19,6 +19,8 @@ class Policy(Protocol):
 
     def copy(self) -> "Policy": ...
 
+    def dist_params(self, states: Any) -> Any: ...
+
 
 class Critic(Protocol):
     def q(self, states: Any, actions: Any) -> Any: ...
@@ -54,6 +56,8 @@ class CAPOConfig:
     initial_tau: float = 0.01
     tau_pilot_initial: float = 0.01
     tau_duplicate_log_tolerance: float = 1e-6
+    # "amse" = action MSE; "wasserstein" = closed-form W2^2 for diagonal Gaussians.
+    distance_metric: str = "amse"
 
 
 @dataclass
@@ -177,10 +181,12 @@ def pairwise_gain_ensemble(
     return mean_delta, std_delta, per_critic
 
 
-def policy_movement(current_policy: Policy, candidate_policy: Policy, states) -> float:
-    a0 = np.asarray(current_policy.act(states))
-    a1 = np.asarray(candidate_policy.act(states))
-    return float(np.sqrt(((a1 - a0) ** 2).sum(axis=-1).mean()))
+def _policy_dist_params(policy: Policy, states):
+    if hasattr(policy, "dist_params"):
+        mean, std = policy.dist_params(states)
+        return np.asarray(mean), np.asarray(std)
+    mean = np.asarray(policy.act(states))
+    return mean, np.zeros_like(mean)
 
 
 def policy_action_mse(current_policy: Policy, candidate_policy: Policy, states) -> float:
@@ -189,10 +195,52 @@ def policy_action_mse(current_policy: Policy, candidate_policy: Policy, states) 
     return float(((a1 - a0) ** 2).sum(axis=-1).mean())
 
 
+def policy_wasserstein_sq(
+    current_policy: Policy, candidate_policy: Policy, states
+) -> float:
+    """Closed-form W2^2 between diagonal Gaussians (Dirac if std=0)."""
+    m0, s0 = _policy_dist_params(current_policy, states)
+    m1, s1 = _policy_dist_params(candidate_policy, states)
+    return float((((m1 - m0) ** 2) + ((s1 - s0) ** 2)).sum(axis=-1).mean())
+
+
+def policy_distance_sq(
+    current_policy: Policy,
+    candidate_policy: Policy,
+    states,
+    metric: str = "amse",
+) -> float:
+    if metric == "wasserstein":
+        return policy_wasserstein_sq(current_policy, candidate_policy, states)
+    return policy_action_mse(current_policy, candidate_policy, states)
+
+
+def policy_movement(
+    current_policy: Policy,
+    candidate_policy: Policy,
+    states,
+    metric: str = "amse",
+) -> float:
+    return float(math.sqrt(max(policy_distance_sq(current_policy, candidate_policy, states, metric), 0.0)))
+
+
 def dataset_action_mse(policy: Policy, states, data_actions) -> float:
     a = np.asarray(policy.act(states))
     da = np.asarray(data_actions)
     return float(((a - da) ** 2).sum(axis=-1).mean())
+
+
+def dataset_wasserstein_sq(policy: Policy, states, data_actions) -> float:
+    """W2^2(N(μ,σ²), δ_a) = ||μ−a||^2 + ||σ||^2."""
+    mean, std = _policy_dist_params(policy, states)
+    da = np.asarray(data_actions)
+    return float((((mean - da) ** 2) + (std ** 2)).sum(axis=-1).mean())
+
+
+def dataset_distance_sq(policy: Policy, states, data_actions, metric: str = "amse") -> float:
+    if metric == "wasserstein":
+        return dataset_wasserstein_sq(policy, states, data_actions)
+    return dataset_action_mse(policy, states, data_actions)
 
 
 def candidate_certificate(
@@ -214,14 +262,17 @@ def candidate_certificate(
         normalize=cfg.normalize_delta_q,
         eps=cfg.q_scale_eps,
     )
-    move = policy_movement(current_policy, candidate_policy, states)
-    action_mse = policy_action_mse(current_policy, candidate_policy, states)
+    metric = getattr(cfg, "distance_metric", "amse") or "amse"
+    dist_sq = policy_distance_sq(current_policy, candidate_policy, states, metric)
+    move = float(math.sqrt(max(dist_sq, 0.0)))
+    # CandidateStats.action_mse stores the active distance^2 (AMSE or W2^2).
+    action_mse = dist_sq
     shift = cfg.shift_penalty_coef * (move**2)
 
     data_penalty = 0.0
     if data_actions is not None and cfg.data_penalty_coef > 0:
-        d_new = dataset_action_mse(candidate_policy, states, data_actions)
-        d_old = dataset_action_mse(current_policy, states, data_actions)
+        d_new = dataset_distance_sq(candidate_policy, states, data_actions, metric)
+        d_old = dataset_distance_sq(current_policy, states, data_actions, metric)
         data_penalty = cfg.data_penalty_coef * max(0.0, d_new - d_old)
 
     cert = mean_gain - cfg.beta_uncertainty * uncertainty - shift - data_penalty - cfg.actor_opt_error

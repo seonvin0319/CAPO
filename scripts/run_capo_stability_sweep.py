@@ -370,6 +370,29 @@ def main():
                     print(f"[failed] rc={returncode} {row['run_id']}", flush=True)
                 else:
                     print(f"[complete] {row['run_id']}", flush=True)
+                    run_dir = Path(row["output_dir"])
+                    try:
+                        plot = subprocess.run(
+                            [
+                                args.python,
+                                str(ROOT / "scripts" / "plot_training_curve.py"),
+                                str(run_dir),
+                            ],
+                            cwd=ROOT,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                        )
+                        if plot.returncode == 0:
+                            print(f"[plot] {run_dir / 'training_curve.png'}", flush=True)
+                        else:
+                            err = (plot.stderr or plot.stdout or "").strip()
+                            print(
+                                f"[plot] failed {row['run_id']}: {err[:300]}",
+                                flush=True,
+                            )
+                    except Exception as e:
+                        print(f"[plot] skipped {row['run_id']}: {e}", flush=True)
                 del running[pid]
     except KeyboardInterrupt:
         for job in running.values():

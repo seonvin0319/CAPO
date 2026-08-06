@@ -69,7 +69,11 @@ FIXED_CONFIG: Dict[str, Any] = {
     "paired_eval_seed0": 10_000,
     "save_ckpt_freq": 50_000,
     "heartbeat_freq": 10_000,
+    "save_best": False,
+    "save_refresh_actors": False,
     "run_tag": "capo_stability",
+    "actor_type": "deterministic",
+    "distance_metric": "auto",
 }
 ENV_SHORT = {
     "hopper-medium-v2": "hm",
@@ -81,7 +85,28 @@ ENV_SHORT = {
     "walker2d-medium-v2": "wm",
     "walker2d-medium-expert-v2": "wmexp",
     "walker2d-medium-replay-v2": "wmr",
+    "hopper-expert-v2": "he",
+    "hopper-full-replay-v2": "hfr",
+    "halfcheetah-expert-v2": "ce",
+    "halfcheetah-full-replay-v2": "cfr",
+    "walker2d-expert-v2": "we",
+    "walker2d-full-replay-v2": "wfr",
+    "antmaze-umaze-v2": "amu",
+    "antmaze-umaze-diverse-v2": "amud",
+    "antmaze-medium-play-v2": "amp",
+    "antmaze-medium-diverse-v2": "amd",
+    "antmaze-large-play-v2": "alp",
+    "antmaze-large-diverse-v2": "ald",
 }
+
+ANTMAZE_ENVIRONMENTS = (
+    "antmaze-umaze-v2",
+    "antmaze-umaze-diverse-v2",
+    "antmaze-medium-play-v2",
+    "antmaze-medium-diverse-v2",
+    "antmaze-large-play-v2",
+    "antmaze-large-diverse-v2",
+)
 
 
 def _float_id(value: float) -> str:
@@ -93,6 +118,8 @@ def _float_id(value: float) -> str:
         return "1"
     if value == 0.001:
         return "1e3"
+    if value == -0.001:
+        return "m1e3"
     return format(value, ".8g").replace(".", "p").replace("-", "m")
 
 
@@ -150,6 +177,10 @@ def generate_manifest(
                     "sweep_name": sweep_name,
                     "out_dir": results_root,
                 }
+                # λ_T=0 cannot apply teacher BC; disable CAPO to avoid refresh cost.
+                if float(resolved["lambda_T"]) <= 0.0:
+                    resolved["use_capo"] = False
+                    resolved["eval_teacher_actor"] = False
                 rows.append(
                     {
                         "run_id": identifier,
