@@ -1,0 +1,26 @@
+name: capo_stability_seed0_fast_antmaze_n2
+environments:
+- antmaze-umaze-v2
+- antmaze-umaze-diverse-v2
+- antmaze-medium-play-v2
+- antmaze-medium-diverse-v2
+- antmaze-large-play-v2
+- antmaze-large-diverse-v2
+seeds:
+- 0
+num_configurations: 7
+num_runs: 42
+note: "Same antmaze A grid as n4, n_critics=2. Per env: λ_T=0×margin0 once + λ_T∈{0.5,1}×margin∈{0,+1e-3,-1e-3}. stale=replace_new, period=100k."
+factors:
+  lambda_T:
+  - 0.0
+  - 0.5
+  - 1.0
+  capo_period:
+  - 100000
+  replace_cert_margin:
+  - 0.0
+  - 0.001
+  - -0.001
+  stale_incumbent_action:
+  - replace_new

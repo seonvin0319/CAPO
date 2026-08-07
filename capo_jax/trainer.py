@@ -59,11 +59,13 @@ def _td3_critic_td_loss(
     q_pred: jnp.ndarray,
     target: jnp.ndarray,
     target_q_ensemble: jnp.ndarray,
+    bootstrap_mask: jnp.ndarray,
     *,
     use_uncertainty_weighted_critic: bool,
     kappa: float,
     eps: float,
     min_weight: float,
+    weight_normalization: str,
 ) -> Tuple[jnp.ndarray, Dict[str, jnp.ndarray]]:
     """TD3 Bellman loss plus detached ensemble-disagreement diagnostics.
 
@@ -77,15 +79,34 @@ def _td3_critic_td_loss(
     # These statistics are diagnostics only.  In particular, they cannot
     # create a pressure for the critics to agree.
     q_std_dataset_action = jax.lax.stop_gradient(jnp.std(q_pred, axis=0).mean())
+    bootstrap_mask = jax.lax.stop_gradient(bootstrap_mask)
     uncertainty = jax.lax.stop_gradient(jnp.std(target_q_ensemble, axis=0))
+    effective_uncertainty = jax.lax.stop_gradient(bootstrap_mask * uncertainty)
     target_q_scale = jax.lax.stop_gradient(
         jnp.mean(jnp.abs(target_q_ensemble), axis=0) + eps
     )
-    normalized_uncertainty = jax.lax.stop_gradient(uncertainty / target_q_scale)
-    weight = 1.0 / (1.0 + kappa * normalized_uncertainty)
-    weight = jnp.clip(weight, min_weight, 1.0)
+    normalized_uncertainty = jax.lax.stop_gradient(
+        effective_uncertainty / target_q_scale
+    )
+    raw_weight = 1.0 / (1.0 + kappa * normalized_uncertainty)
+    raw_weight = jax.lax.stop_gradient(jnp.clip(raw_weight, min_weight, 1.0))
+
+    nonterminal = bootstrap_mask > 0.0
+    nonterminal_count = jnp.sum(nonterminal)
+    nonterminal_mean_weight = jnp.sum(
+        jnp.where(nonterminal, raw_weight, 0.0)
+    ) / jnp.maximum(nonterminal_count, 1)
+    if weight_normalization == "batch_mean":
+        renormalized_weight = raw_weight / jax.lax.stop_gradient(
+            nonterminal_mean_weight + eps
+        )
+        weight = jnp.where(nonterminal, renormalized_weight, 1.0)
+        weight = jnp.where(nonterminal_count > 0, weight, jnp.ones_like(weight))
+        weight = jnp.where(jnp.asarray(kappa) == 0.0, jnp.ones_like(weight), weight)
+    else:
+        weight = raw_weight
     weight = jax.lax.stop_gradient(weight)
-    td_loss_weighted = jnp.mean(weight[None, :] * td_error_sq)
+    td_loss_weighted = jnp.mean(jax.lax.stop_gradient(weight)[None, :] * td_error_sq)
 
     # Keep the original reduction expression on the disabled path, so its
     # loss and critic update are numerically identical to the prior version.
@@ -94,12 +115,28 @@ def _td3_critic_td_loss(
         "critic/uncertainty_mean": uncertainty.mean(),
         "critic/uncertainty_std": uncertainty.std(),
         "critic/uncertainty_max": uncertainty.max(),
+        "critic/effective_uncertainty_mean": effective_uncertainty.mean(),
+        "critic/effective_uncertainty_std": effective_uncertainty.std(),
+        "critic/effective_uncertainty_max": effective_uncertainty.max(),
+        "critic/normalized_uncertainty_mean": normalized_uncertainty.mean(),
+        "critic/normalized_uncertainty_std": normalized_uncertainty.std(),
+        "critic/normalized_uncertainty_max": normalized_uncertainty.max(),
+        "critic/raw_uncertainty_weight_mean": raw_weight.mean(),
+        "critic/raw_uncertainty_weight_min": raw_weight.min(),
+        "critic/raw_uncertainty_weight_p10": jnp.percentile(raw_weight, 10),
+        "critic/raw_uncertainty_weight_p50": jnp.percentile(raw_weight, 50),
+        "critic/raw_uncertainty_weight_p90": jnp.percentile(raw_weight, 90),
         "critic/uncertainty_weight_mean": weight.mean(),
         "critic/uncertainty_weight_min": weight.min(),
+        "critic/uncertainty_weight_max": weight.max(),
+        "critic/uncertainty_weight_p10": jnp.percentile(weight, 10),
+        "critic/uncertainty_weight_p50": jnp.percentile(weight, 50),
+        "critic/uncertainty_weight_p90": jnp.percentile(weight, 90),
         "critic/td_loss_unweighted": td_loss_unweighted,
         "critic/td_loss_weighted": td_loss_weighted,
         "critic/q_std_dataset_action": q_std_dataset_action,
         "critic/q_std_next_policy_action": uncertainty.mean(),
+        "critic/bootstrap_fraction": bootstrap_mask.mean(),
     }
     return loss, stats
 
@@ -156,6 +193,7 @@ class TrainConfig:
     critic_uncertainty_kappa: float = 1.0
     critic_uncertainty_eps: float = 1e-6
     critic_uncertainty_min_weight: float = 0.0
+    critic_uncertainty_weight_normalization: str = "none"
     alpha: float = 2.5
     td3_actor_objective: str = "capo_student"  # capo_student or td3bc_legacy
     lambda_D: float = 0.4
@@ -260,6 +298,10 @@ class TrainConfig:
             raise ValueError("critic_uncertainty_eps must be positive")
         if not 0.0 <= self.critic_uncertainty_min_weight <= 1.0:
             raise ValueError("critic_uncertainty_min_weight must be in [0, 1]")
+        if self.critic_uncertainty_weight_normalization not in ("none", "batch_mean"):
+            raise ValueError(
+                "critic_uncertainty_weight_normalization must be none or batch_mean"
+            )
         if self.tau_controller != "pilot_adaptive":
             raise ValueError("tau_controller is fixed to pilot_adaptive")
         if self.teacher_bc_mode not in ("uniform", "statewise_lcb_mask"):
@@ -731,10 +773,12 @@ class CAPOTrainer:
                 q_pred,
                 target,
                 target_q_ensemble,
+                1.0 - dones.squeeze(-1),
                 use_uncertainty_weighted_critic=cfg.use_uncertainty_weighted_critic,
                 kappa=cfg.critic_uncertainty_kappa,
                 eps=cfg.critic_uncertainty_eps,
                 min_weight=cfg.critic_uncertainty_min_weight,
+                weight_normalization=cfg.critic_uncertainty_weight_normalization,
             )
 
         (critic_loss, critic_stats), critic_grads = jax.value_and_grad(

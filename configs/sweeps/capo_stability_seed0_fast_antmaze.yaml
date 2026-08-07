@@ -1,0 +1,83 @@
+name: capo_stability_seed0_fast_antmaze
+environments:
+- antmaze-umaze-v2
+- antmaze-umaze-diverse-v2
+- antmaze-medium-play-v2
+- antmaze-medium-diverse-v2
+- antmaze-large-play-v2
+- antmaze-large-diverse-v2
+seeds:
+- 0
+num_configurations: 7
+num_runs: 42
+resolved_example:
+  algorithm: td3_bc
+  device: cuda
+  max_timesteps: 1000000
+  eval_freq: 5000
+  n_episodes: 10
+  batch_size: 256
+  jit_update_chunk: 32
+  normalize: true
+  normalize_reward: true
+  n_critics: 4
+  discount: 0.99
+  use_capo: true
+  n_max: 2
+  beta_uncertainty: 0.75
+  shift_penalty_coef: 0.25
+  data_penalty_coef: 0.25
+  tau_min: 0.001
+  tau_max: 0.05
+  target_action_mse: 0.0025
+  max_action_mse: 0.2
+  tau_pilot_initial: 0.01
+  initial_tau: 0.01
+  tau_duplicate_log_tolerance: 1.0e-06
+  tau_controller: pilot_adaptive
+  normalize_delta_q: true
+  split_critics_for_certification: true
+  refine_steps: 2
+  capo_start_step: 100000
+  lambda_D: 0.2
+  bc_reduction: element_mean
+  teacher_bc_mode: uniform
+  teacher_hold: true
+  hold_teacher_on_nstar_zero: true
+  use_replace_gate: true
+  eval_base_actor: true
+  eval_teacher_actor: true
+  paired_eval_episodes: 0
+  paired_eval_seed0: 10000
+  save_ckpt_freq: 50000
+  save_best: false
+  heartbeat_freq: 10000
+  run_tag: capo_stability
+  save_refresh_actors: false
+  nstar_zero_action: revalidate_current
+  td3_actor_objective: capo_student
+  lambda_T: 0.0
+  capo_period: 100000
+  replace_cert_margin: 0.0
+  stale_incumbent_action: replace_new
+  env: antmaze-umaze-v2
+  seed: 0
+  rng_seed: 230051976
+  run_id: fastam_amu_s0_lt0_p100k_m0_replace_new
+  sweep_name: capo_stability_seed0_fast_antmaze
+  out_dir: results_jax_sweeps
+note: "Antmaze A: 6 envs x (lambda_T=0 with margin 0 only + lambda_T in {0.5,1} x margin in {0,+1e-3,-1e-3}) = 7 cells/env, 42 total. n_critics=4, stale=replace_new, period=100k."
+
+factors:
+  lambda_T:
+  - 0.0
+  - 0.5
+  - 1.0
+  capo_period:
+  - 100000
+  replace_cert_margin:
+  - 0.0
+  - 0.001
+  - -0.001
+  stale_incumbent_action:
+  - replace_new

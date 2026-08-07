@@ -1,0 +1,93 @@
+name: capo_antmaze_uncertainty_critic_seed0
+environments:
+- antmaze-umaze-v2
+- antmaze-umaze-diverse-v2
+seeds:
+- 0
+num_configurations: 24
+num_runs: 48
+note: 'Phase-1 UC critic diagnostic. Isolate use_uncertainty_weighted_critic + critic_uncertainty_kappa
+  only. Envs: umaze + umaze-diverse. n_critics in {4,8,16}, lambda_T in {0,0.5}, kappa
+  in {0,0.5,1,2}, margin=0, period=100k, stale=replace_new, seed=0. kappa=0 must match
+  original TD critic update (enabled path).'
+factors:
+  n_critics:
+  - 4
+  - 8
+  - 16
+  lambda_T:
+  - 0.0
+  - 0.5
+  critic_uncertainty_kappa:
+  - 0.0
+  - 0.5
+  - 1.0
+  - 2.0
+  capo_period:
+  - 100000
+  replace_cert_margin:
+  - 0.0
+  stale_incumbent_action:
+  - replace_new
+resolved_example:
+  algorithm: td3_bc
+  batch_size: 256
+  bc_reduction: element_mean
+  beta_uncertainty: 0.75
+  capo_period: 100000
+  capo_start_step: 100000
+  data_penalty_coef: 0.25
+  device: cuda
+  discount: 0.99
+  env: antmaze-umaze-v2
+  eval_base_actor: true
+  eval_freq: 5000
+  eval_teacher_actor: true
+  heartbeat_freq: 10000
+  hold_teacher_on_nstar_zero: true
+  initial_tau: 0.01
+  jit_update_chunk: 32
+  lambda_D: 0.2
+  lambda_T: 0.0
+  max_action_mse: 0.2
+  max_timesteps: 1000000
+  n_critics: 4
+  n_episodes: 10
+  n_max: 2
+  normalize: true
+  normalize_delta_q: true
+  normalize_reward: true
+  nstar_zero_action: revalidate_current
+  out_dir: results_jax_sweeps
+  paired_eval_episodes: 0
+  paired_eval_seed0: 10000
+  refine_steps: 2
+  replace_cert_margin: 0.0
+  rng_seed: 489810205
+  run_id: ucam_n4_amu_s0_lt0_p100k_m0_k0_replace_new
+  run_tag: capo_stability
+  save_best: false
+  save_ckpt_freq: 50000
+  save_refresh_actors: false
+  seed: 0
+  shift_penalty_coef: 0.25
+  split_critics_for_certification: true
+  stale_incumbent_action: replace_new
+  sweep_name: capo_antmaze_uncertainty_critic_seed0
+  target_action_mse: 0.0025
+  tau_controller: pilot_adaptive
+  tau_duplicate_log_tolerance: 1.0e-06
+  tau_max: 0.05
+  tau_min: 0.001
+  tau_pilot_initial: 0.01
+  td3_actor_objective: capo_student
+  teacher_bc_mode: uniform
+  teacher_hold: true
+  use_capo: true
+  use_replace_gate: true
+  use_uncertainty_weighted_critic: true
+  critic_uncertainty_kappa: 0.0
+  critic_uncertainty_eps: 1.0e-06
+  critic_uncertainty_min_weight: 0.0
+  actor_type: deterministic
+  distance_metric: auto
