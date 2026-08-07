@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Wait for expert/full-replay fast_n2 queue to finish, then launch
-# gaussian actor + Wasserstein distance replace_new mgrid (108 cells, 9 medium envs).
+# gaussian actor + Wasserstein distance replace_new mgrid (54 cells, 9 medium envs, period=100k only).
 set -euo pipefail
 ROOT=/home/choi/CAPO
 PY=/home/choi/miniconda3/envs/offrl_backup/bin/python

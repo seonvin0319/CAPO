@@ -55,6 +55,55 @@ from .td3_objectives import td3bc_legacy_actor_components
 EXP_ADV_MAX = 100.0
 
 
+def _td3_critic_td_loss(
+    q_pred: jnp.ndarray,
+    target: jnp.ndarray,
+    target_q_ensemble: jnp.ndarray,
+    *,
+    use_uncertainty_weighted_critic: bool,
+    kappa: float,
+    eps: float,
+    min_weight: float,
+) -> Tuple[jnp.ndarray, Dict[str, jnp.ndarray]]:
+    """TD3 Bellman loss plus detached ensemble-disagreement diagnostics.
+
+    CriticEnsemble deliberately returns [num_critics, batch], so axis 0 is
+    the ensemble axis throughout this function.  The target itself is passed
+    in unchanged; uncertainty only reweights the per-transition TD error.
+    """
+    td_error_sq = (q_pred - target[None, :]) ** 2
+    td_loss_unweighted = jnp.mean(td_error_sq)
+
+    # These statistics are diagnostics only.  In particular, they cannot
+    # create a pressure for the critics to agree.
+    q_std_dataset_action = jax.lax.stop_gradient(jnp.std(q_pred, axis=0).mean())
+    uncertainty = jax.lax.stop_gradient(jnp.std(target_q_ensemble, axis=0))
+    target_q_scale = jax.lax.stop_gradient(
+        jnp.mean(jnp.abs(target_q_ensemble), axis=0) + eps
+    )
+    normalized_uncertainty = jax.lax.stop_gradient(uncertainty / target_q_scale)
+    weight = 1.0 / (1.0 + kappa * normalized_uncertainty)
+    weight = jnp.clip(weight, min_weight, 1.0)
+    weight = jax.lax.stop_gradient(weight)
+    td_loss_weighted = jnp.mean(weight[None, :] * td_error_sq)
+
+    # Keep the original reduction expression on the disabled path, so its
+    # loss and critic update are numerically identical to the prior version.
+    loss = td_loss_weighted if use_uncertainty_weighted_critic else td_loss_unweighted
+    stats = {
+        "critic/uncertainty_mean": uncertainty.mean(),
+        "critic/uncertainty_std": uncertainty.std(),
+        "critic/uncertainty_max": uncertainty.max(),
+        "critic/uncertainty_weight_mean": weight.mean(),
+        "critic/uncertainty_weight_min": weight.min(),
+        "critic/td_loss_unweighted": td_loss_unweighted,
+        "critic/td_loss_weighted": td_loss_weighted,
+        "critic/q_std_dataset_action": q_std_dataset_action,
+        "critic/q_std_next_policy_action": uncertainty.mean(),
+    }
+    return loss, stats
+
+
 class _Tee:
     def __init__(self, *streams):
         self.streams = streams
@@ -101,6 +150,12 @@ class TrainConfig:
     policy_noise: float = 0.2
     noise_clip: float = 0.5
     policy_freq: int = 2
+    # Optional confidence weighting for the TD3+BC critic Bellman loss.
+    # Disabled by default so existing runs retain the original update exactly.
+    use_uncertainty_weighted_critic: bool = False
+    critic_uncertainty_kappa: float = 1.0
+    critic_uncertainty_eps: float = 1e-6
+    critic_uncertainty_min_weight: float = 0.0
     alpha: float = 2.5
     td3_actor_objective: str = "capo_student"  # capo_student or td3bc_legacy
     lambda_D: float = 0.4
@@ -199,6 +254,12 @@ class TrainConfig:
             raise ValueError("nstar_zero_action must be legacy_hold or revalidate_current")
         if self.td3_actor_objective not in ("capo_student", "td3bc_legacy"):
             raise ValueError("td3_actor_objective must be capo_student or td3bc_legacy")
+        if self.critic_uncertainty_kappa < 0.0:
+            raise ValueError("critic_uncertainty_kappa must be non-negative")
+        if self.critic_uncertainty_eps <= 0.0:
+            raise ValueError("critic_uncertainty_eps must be positive")
+        if not 0.0 <= self.critic_uncertainty_min_weight <= 1.0:
+            raise ValueError("critic_uncertainty_min_weight must be in [0, 1]")
         if self.tau_controller != "pilot_adaptive":
             raise ValueError("tau_controller is fixed to pilot_adaptive")
         if self.teacher_bc_mode not in ("uniform", "statewise_lcb_mask"):
@@ -660,12 +721,25 @@ class CAPOTrainer:
                 -self.max_action,
                 self.max_action,
             )
-            target_q = q_min(critic_apply(state.critic_target_params, next_states, next_actions))
+            target_q_ensemble = critic_apply(
+                state.critic_target_params, next_states, next_actions
+            )
+            target_q = q_min(target_q_ensemble)
             target = rewards.squeeze(-1) + (1.0 - dones.squeeze(-1)) * cfg.discount * target_q
             q_pred = critic_apply(critic_params, states, actions)
-            return jnp.mean((q_pred - target[None, :]) ** 2)
+            return _td3_critic_td_loss(
+                q_pred,
+                target,
+                target_q_ensemble,
+                use_uncertainty_weighted_critic=cfg.use_uncertainty_weighted_critic,
+                kappa=cfg.critic_uncertainty_kappa,
+                eps=cfg.critic_uncertainty_eps,
+                min_weight=cfg.critic_uncertainty_min_weight,
+            )
 
-        critic_loss, critic_grads = jax.value_and_grad(critic_loss_fn)(state.critic_params)
+        (critic_loss, critic_stats), critic_grads = jax.value_and_grad(
+            critic_loss_fn, has_aux=True
+        )(state.critic_params)
         critic_updates, critic_opt_state = self.critic_tx.update(
             critic_grads, state.critic_opt_state, state.critic_params
         )
@@ -766,6 +840,7 @@ class CAPOTrainer:
             )
             logs = {
                 "critic_loss": critic_loss,
+                **critic_stats,
                 **astats,
                 "bc_teacher": astats["teacher_bc_loss_unweighted"],
                 "has_teacher": st.has_teacher,
@@ -784,6 +859,7 @@ class CAPOTrainer:
             zero = jnp.asarray(0.0)
             logs = {
                 "critic_loss": critic_loss,
+                **critic_stats,
                 "actor_loss": zero,
                 "q_actor_term": zero,
                 "data_bc_loss": zero,
